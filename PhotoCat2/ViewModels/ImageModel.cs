@@ -39,6 +39,7 @@ namespace PhotoCat2.ViewModels
         public Action LoadFinished = null;
 
         public string FullPath { get; }
+        string LoadedPath = "";
         public string Title { get; }
 
         public BitmapImage Bitmap { get; set; }
@@ -58,31 +59,37 @@ namespace PhotoCat2.ViewModels
 
             LoadStarted?.Invoke();
 
-            Bitmap = await Task.Run(() =>
+            if (LoadedPath != FullPath)
             {
-                var bmp = new BitmapImage()
+                Bitmap = await Task.Run(() =>
                 {
-                    DecodePixelHeight = 200,
-                    DecodePixelWidth = 300,                    
-                };
-                var ms = new MemoryStream();
-                using (var fs = new FileStream(FullPath, FileMode.Open))
-                {
-                    fs.CopyTo(ms);
-                    ms.Seek(0, SeekOrigin.Begin);
-                }
+                    var bmp = new BitmapImage()
+                    {
+                        DecodePixelHeight = 200,
+                        DecodePixelWidth = 300,
+                    };
+                    var ms = new MemoryStream();
+                    using (var fs = new FileStream(FullPath, FileMode.Open))
+                    {
+                        fs.CopyTo(ms);
+                        ms.Seek(0, SeekOrigin.Begin);
+                    }
 
-                bmp.BeginInit();
-                bmp.StreamSource = ms;
-                bmp.CacheOption = BitmapCacheOption.OnLoad;                
-                bmp.EndInit();
-                bmp.Freeze();
+                    bmp.BeginInit();
+                    bmp.StreamSource = ms;
+                    bmp.CacheOption = BitmapCacheOption.OnLoad;
+                    bmp.EndInit();
+                    bmp.Freeze();
 
-                return bmp;
-            });
+                    return bmp;
+                });
+                LoadedPath = FullPath;
+
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Bitmap)));
+
+            }
 
             OpenRequested?.Invoke(Bitmap);
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Bitmap)));
             LoadFinished?.Invoke();
         }
 
