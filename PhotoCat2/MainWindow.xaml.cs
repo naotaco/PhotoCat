@@ -1,8 +1,11 @@
-﻿using System;
+﻿using PhotoCat2.ViewModels;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -23,6 +26,7 @@ namespace PhotoCat2
     {
         public MainWindow()
         {
+            DataContext = new MainViewModel();
             InitializeComponent();
         }
 
@@ -63,16 +67,55 @@ namespace PhotoCat2
             return null;
         }
 
-        private void Grid_Drop(object sender, DragEventArgs e)
+        private async void Grid_Drop(object sender, DragEventArgs e)
         {
             var f = GetFirstOrDefaultTargetFile(e);
             if (f != null)
             {
                 Debug.WriteLine("drop: " + f);
                 if (DndGuide.Visibility == Visibility.Visible) { DndGuide.Visibility = Visibility.Collapsed; }
+                MainImageProgress.Visibility = Visibility.Visible;
+                var loaded = await LoadSingleImage(f, MainImage);
+                LoadFileList(System.IO.Path.GetDirectoryName(f));
             }
         }
 
+        async Task<bool> LoadSingleImage(string path, Image img)
+        {
+            var load0 = new Stopwatch();
+            load0.Start();
+
+            return await Task.Run(() =>
+            {
+                var bmp = new BitmapImage();
+                var fs = new FileStream(path, FileMode.Open);
+
+                bmp.BeginInit();
+                bmp.StreamSource = fs;
+                bmp.EndInit();
+                bmp.Freeze();
+
+                Debug.WriteLine("Init in ms: " + load0.ElapsedMilliseconds);
+
+                Dispatcher.BeginInvoke(new ThreadStart(delegate
+                {
+                    img.Source = bmp;
+                    img.Unloaded += delegate
+                    {
+                        fs.Close();
+                        fs.Dispose();
+                    };
+                    Debug.WriteLine("Loaded in ms: " + load0.ElapsedMilliseconds);
+                    MainImageProgress.Visibility = Visibility.Collapsed;
+                }));
+                return true;
+            });
+        }
+
+        async void LoadFileList(string dir)
+        {
+            //   var files = System.IO.File
+        }
 
     }
 }
