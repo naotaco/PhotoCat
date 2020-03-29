@@ -1,0 +1,23 @@
+﻿<Window x:Class="PhotoCat2.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:PhotoCat2"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="450" Width="800"
+        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+        TextElement.Foreground="{DynamicResource MaterialDesignBody}"
+        TextElement.FontWeight="Regular"
+        TextElement.FontSize="13"
+        TextOptions.TextFormattingMode="Ideal" 
+        TextOptions.TextRenderingMode="Auto"        
+        Background="{DynamicResource MaterialDesignPaper}"
+        FontFamily="{DynamicResource MaterialDesignFont}">
+    <Grid DragEnter="Grid_DragEnter" DragOver="Grid_DragOver" Drop="Grid_Drop" AllowDrop="True" DragLeave="Grid_DragLeave"  IsHitTestVisible="True" Background="DarkGray">
+        <!--<Rectangle Fill="Blue" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"  DragEnter="Grid_DragEnter" DragOver="Grid_DragOver" Drop="Grid_Drop" AllowDrop="True"/>-->
+        <materialDesign:Card Padding="32" Margin="16" Opacity="0.5" x:Name="DndGuide" Visibility="Collapsed">
+            <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Style="{DynamicResource MaterialDesignTitleTextBlock}">Drop JPG files here!</TextBlock>
+        </materialDesign:Card>
+    </Grid>
+</Window>
