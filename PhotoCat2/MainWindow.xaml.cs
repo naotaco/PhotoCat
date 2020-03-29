@@ -30,6 +30,11 @@ namespace PhotoCat2
             InitializeComponent();
         }
 
+        MainViewModel GetVM()
+        {
+            return DataContext as MainViewModel;
+        }
+
         private void Grid_DragEnter(object sender, DragEventArgs e)
         {
             var f = GetFirstOrDefaultTargetFile(e);
@@ -67,55 +72,141 @@ namespace PhotoCat2
             return null;
         }
 
-        private async void Grid_Drop(object sender, DragEventArgs e)
+        private void Grid_Drop(object sender, DragEventArgs e)
         {
             var f = GetFirstOrDefaultTargetFile(e);
             if (f != null)
             {
                 Debug.WriteLine("drop: " + f);
                 if (DndGuide.Visibility == Visibility.Visible) { DndGuide.Visibility = Visibility.Collapsed; }
-                MainImageProgress.Visibility = Visibility.Visible;
-                var loaded = await LoadSingleImage(f, MainImage);
+
+                // LoadSingleImage(f, MainImage);
+
+                GetVM().Items.Clear();
                 LoadFileList(System.IO.Path.GetDirectoryName(f));
             }
         }
 
-        async Task<bool> LoadSingleImage(string path, Image img)
+        async Task<long> LoadSingleImage(string path, Image img)
         {
-            var load0 = new Stopwatch();
-            load0.Start();
+            var loadSw = new Stopwatch();
+            loadSw.Start();
 
             return await Task.Run(() =>
             {
-                var bmp = new BitmapImage();
-                var fs = new FileStream(path, FileMode.Open);
+                var bmp = new BitmapImage()
+                {
+                };
+                var ms = new MemoryStream();
+                using (var fs = new FileStream(path, FileMode.Open))
+                {
+                    fs.CopyTo(ms);
+                    ms.Seek(0, SeekOrigin.Begin);
+                }
 
                 bmp.BeginInit();
-                bmp.StreamSource = fs;
+                bmp.StreamSource = ms;
                 bmp.EndInit();
                 bmp.Freeze();
 
-                Debug.WriteLine("Init in ms: " + load0.ElapsedMilliseconds);
+                Debug.WriteLine("Init in ms: " + loadSw.ElapsedMilliseconds);
 
                 Dispatcher.BeginInvoke(new ThreadStart(delegate
                 {
                     img.Source = bmp;
                     img.Unloaded += delegate
                     {
-                        fs.Close();
-                        fs.Dispose();
+                        ms.Close();
+                        ms.Dispose();
                     };
-                    Debug.WriteLine("Loaded in ms: " + load0.ElapsedMilliseconds);
-                    MainImageProgress.Visibility = Visibility.Collapsed;
+                    img.Loaded += (e0, e1) =>
+                    {
+                        MainImageProgress.Visibility = Visibility.Collapsed;
+                        Debug.WriteLine("Loaded in ms: " + loadSw.ElapsedMilliseconds);
+                    };
+
+
+
                 }));
-                return true;
+                return loadSw.ElapsedMilliseconds;
             });
         }
 
         async void LoadFileList(string dir)
         {
-            //   var files = System.IO.File
+            var loadSw = new Stopwatch();
+
+            var files = await Task.Run(() =>
+            {
+                var dirInfo = new DirectoryInfo(dir);
+                var fs = new List<string>();
+
+                var info = dirInfo.GetFiles("*.*");
+                foreach (FileInfo f in info)
+                {
+                    fs.Add(f.FullName);
+                }
+                return fs;
+            });
+            Debug.WriteLine("File list loaded in ms: " + loadSw.ElapsedMilliseconds);
+
+            await Dispatcher.BeginInvoke(new ThreadStart(delegate
+            {
+                foreach (var f in files)
+                {
+                    GetVM().Items.Add(new ImageModel(f)
+                    {
+                        OpenRequested = (bmp) =>
+                        {
+                            Dispatcher.BeginInvoke(new ThreadStart(delegate
+                            {
+                                MainImage.Source = bmp;
+                            }));
+                        },
+                        LoadStarted = () =>
+                        {
+                            Dispatcher.BeginInvoke(new ThreadStart(delegate
+                            {
+                                MainImageProgress.Visibility = Visibility.Visible;
+                            }));
+                        },
+                        LoadFinished = () =>
+                        {
+                            Dispatcher.BeginInvoke(new ThreadStart(delegate
+                            {
+                                MainImageProgress.Visibility = Visibility.Collapsed;
+                            }));
+                        },
+                    });
+                }
+                Debug.WriteLine("File list items added in ms: " + loadSw.ElapsedMilliseconds);
+            }), System.Windows.Threading.DispatcherPriority.Background, null);
         }
 
+        private void MainImage_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+
+        }
+
+        private void MainImage_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            var image = sender as Image;
+            var source = image.Source as BitmapImage;
+            if (image != null && source != null)
+            {
+                image.Stretch = Stretch.None;
+                Canvas.SetLeft(image, source.Width / 2);
+                Canvas.SetTop(image, source.Height / 2);
+            }
+        }
+
+        private void MainImage_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            var image = sender as Image;
+            if (image != null)
+            {
+                image.Stretch = Stretch.Uniform;
+            }
+        }
     }
 }

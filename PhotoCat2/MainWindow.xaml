@@ -4,7 +4,8 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:PhotoCat2"
-        xmlns:localmodels="clr-namespace:PhotoCat2.Models"
+        xmlns:localmodels="clr-namespace:PhotoCat2.ViewModels"
+        xmlns:i="clr-namespace:System.Windows.Interactivity;assembly=System.Windows.Interactivity"
         mc:Ignorable="d"
         Title="MainWindow" Height="450" Width="800"
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
@@ -16,6 +17,7 @@
         
         Background="{DynamicResource MaterialDesignPaper}"
         FontFamily="{DynamicResource MaterialDesignFont}">
+    
     <Grid DragEnter="Grid_DragEnter" DragOver="Grid_DragOver" Drop="Grid_Drop" AllowDrop="True" DragLeave="Grid_DragLeave"  IsHitTestVisible="True" Background="White">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="300"/>
@@ -23,18 +25,26 @@
         </Grid.ColumnDefinitions>
         <ScrollViewer Grid.Column="0">
             <ItemsControl ItemsSource="{Binding Items}">
+          
                 <ItemsControl.ItemTemplate>
-                    <DataTemplate DataType="{x:Type localmodels:ThumbnailModel}">
+                    <DataTemplate DataType="{x:Type localmodels:ImageModel}">
                         <Border x:Name="Border" Padding="8">
                             <Grid>
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="Auto" />
                                     <ColumnDefinition />
                                 </Grid.ColumnDefinitions>
-                                <CheckBox VerticalAlignment="Center" IsChecked="{Binding IsChecked}"/>
-                                <StackPanel Margin="8 0 0 0" Grid.Column="1">
-                                    <TextBlock FontWeight="Bold" Text="{Binding Title}" />
-                                    <TextBlock Text="Extra description" />
+                                <!--<CheckBox VerticalAlignment="Center" IsChecked="{Binding IsChecked}"/>-->
+                                <Image Width="100" Height="40" RenderSize="300 200" Source="{Binding Bitmap, Mode=OneWay}"
+                                       RenderOptions.BitmapScalingMode="LowQuality">
+                                    <i:Interaction.Triggers>
+                                        <i:EventTrigger EventName="Loaded">
+                                            <i:InvokeCommandAction Command="{Binding LoadedCommand}" />
+                                        </i:EventTrigger>
+                                    </i:Interaction.Triggers>
+                                </Image>
+                                <StackPanel Margin="8 0" Grid.Column="1">
+                                    <Button Content="{Binding Title}" Margin="4" Command="{Binding OpenCommand}" />
                                 </StackPanel>
                             </Grid>
                         </Border>
@@ -43,12 +53,13 @@
             </ItemsControl>
         </ScrollViewer>
         <Grid Grid.Column="1">
-            <Image x:Name="MainImage"/>
+            <Image x:Name="MainImage" RenderSize="300 200"
+                   MouseDown="MainImage_MouseDown" MouseLeftButtonDown="MainImage_MouseLeftButtonDown" MouseLeftButtonUp="MainImage_MouseLeftButtonUp"/>
         </Grid>
         
         <materialDesign:Card Padding="32" Margin="16" Opacity="0.5" x:Name="DndGuide" Visibility="Collapsed" Grid.ColumnSpan="2">
             <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Style="{DynamicResource MaterialDesignTitleTextBlock}">Drop JPG files here!</TextBlock>
         </materialDesign:Card>
-        <ProgressBar IsIndeterminate="True" x:Name="MainImageProgress" Visibility="Visible" Grid.Column="1"/>
+        <ProgressBar IsIndeterminate="True" VerticalAlignment="Bottom" x:Name="MainImageProgress" Visibility="Collapsed" Grid.Column="1"/>
     </Grid>
 </Window>

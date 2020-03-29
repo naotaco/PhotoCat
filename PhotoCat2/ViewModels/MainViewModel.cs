@@ -1,4 +1,4 @@
-﻿using PhotoCat2.Models;
+﻿using PhotoCat2.ViewModels;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
@@ -11,13 +11,13 @@ namespace PhotoCat2.ViewModels
 
     public class MainViewModel
     {
-        public ObservableCollection<ThumbnailModel> Items { get; } = new ObservableCollection<ThumbnailModel>();
+        public ObservableCollection<ImageModel> Items { get; } = new ObservableCollection<ImageModel>();
 
         public MainViewModel()
         {
             for (int i = 1; i < 20; i++)
             {
-                Items.Add(new ThumbnailModel($"Item {i}"));
+                Items.Add(new ImageModel($"Item {i}"));
             }
         }
     }
