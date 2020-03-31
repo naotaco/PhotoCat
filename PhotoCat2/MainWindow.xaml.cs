@@ -144,7 +144,10 @@ namespace PhotoCat2
                 var info = dirInfo.GetFiles("*.*");
                 foreach (FileInfo f in info)
                 {
-                    fs.Add(f.FullName);
+                    if (f.Name.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase))
+                    {
+                        fs.Add(f.FullName);
+                    }
                 }
                 return fs;
             });
@@ -152,7 +155,16 @@ namespace PhotoCat2
 
             await Dispatcher.BeginInvoke(new ThreadStart(delegate
             {
-                foreach (var f in files)
+                GetVM().Items.Clear();
+                GetVM().IsLoading = true;
+                GetVM().TotalImages = files.Count;
+                GetVM().LoadedImagesCount = 0;
+            }));
+
+
+            foreach (var f in files)
+            {
+                await Dispatcher.BeginInvoke(new ThreadStart(delegate
                 {
                     GetVM().Items.Add(new ImageModel(f)
                     {
@@ -178,9 +190,12 @@ namespace PhotoCat2
                             }));
                         },
                     });
-                }
-                Debug.WriteLine("File list items added in ms: " + loadSw.ElapsedMilliseconds);
-            }), System.Windows.Threading.DispatcherPriority.Background, null);
+
+                }), System.Windows.Threading.DispatcherPriority.ApplicationIdle, null);
+
+            }
+            Debug.WriteLine("File list items added in ms: " + loadSw.ElapsedMilliseconds);
+
         }
 
         private void MainImage_MouseDown(object sender, MouseButtonEventArgs e)
@@ -207,6 +222,13 @@ namespace PhotoCat2
             {
                 image.Stretch = Stretch.Uniform;
             }
+        }
+
+        private void ScrollViewer_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            ScrollViewer scv = (ScrollViewer)sender;
+            scv.ScrollToVerticalOffset(scv.VerticalOffset - e.Delta);
+            e.Handled = true;
         }
     }
 }

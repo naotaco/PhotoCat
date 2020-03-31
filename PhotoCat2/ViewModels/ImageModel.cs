@@ -37,6 +37,7 @@ namespace PhotoCat2.ViewModels
         public Action<BitmapImage> OpenRequested = null;
         public Action LoadStarted = null;
         public Action LoadFinished = null;
+        public Action ContentLoaded = null;
 
         public string FullPath { get; }
         string LoadedPath = "";
@@ -47,7 +48,7 @@ namespace PhotoCat2.ViewModels
         public ImageModel(string path)
         {
             OpenCommand = new RelayCommand(new Action(OpenImage));
-            LoadedCommand = new RelayCommand(new Action(ImageLoaded));
+            LoadedCommand = new RelayCommand(new Action(Loaded));
 
             FullPath = path;
             Title = System.IO.Path.GetFileName(path);
@@ -93,9 +94,9 @@ namespace PhotoCat2.ViewModels
             LoadFinished?.Invoke();
         }
 
-        public void ImageLoaded()
+        void Loaded()
         {
-            Debug.WriteLine("Image loaded");
+            ContentLoaded?.Invoke();
         }
     }
 }

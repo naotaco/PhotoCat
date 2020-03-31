@@ -2,23 +2,97 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Windows;
 
 namespace PhotoCat2.ViewModels
 {
 
-    public class MainViewModel
+    public class MainViewModel : INotifyPropertyChanged
     {
         public ObservableCollection<ImageModel> Items { get; } = new ObservableCollection<ImageModel>();
 
+        private int _TotalImages = 0;
+        public int TotalImages
+        {
+            get { return _TotalImages; }
+            set
+            {
+                if (value != _TotalImages)
+                {
+                    _TotalImages = value;
+                    Notify(nameof(TotalImages));
+                    Notify(nameof(LoadingProgress));
+                }
+            }
+        }
+
+
+        private int _LoadedImagesCount = 0;
+        public int LoadedImagesCount
+        {
+            get { return _LoadedImagesCount; }
+            set
+            {
+                if (value != _LoadedImagesCount)
+                {
+                    _LoadedImagesCount = value;
+                    Notify(nameof(LoadedImagesCount));
+                    Notify(nameof(LoadingProgress));
+                }
+            }
+        }
+
+        private bool _IsLoading = false;
+        public bool IsLoading
+        {
+            get { return _IsLoading; }
+            set
+            {
+                if (value != _IsLoading)
+                {
+                    _IsLoading = value;
+                    Notify(nameof(IsLoading));
+                    Notify(nameof(IsLoadingInfoVisible));
+                }
+            }
+        }
+
+        public Visibility IsLoadingInfoVisible
+        {
+            get { return IsLoading ? Visibility.Visible : Visibility.Collapsed; }
+        }
+
+        public double LoadingProgress
+        {
+            get
+            {
+                if (TotalImages == 0) { return 0; }
+                return LoadedImagesCount / TotalImages;
+            }
+        }
+
         public MainViewModel()
         {
-            for (int i = 1; i < 20; i++)
+            Items.CollectionChanged += Items_CollectionChanged;
+        }
+
+        private void Items_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
+        {
+            if (e.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Add)
             {
-                Items.Add(new ImageModel($"Item {i}"));
+                LoadedImagesCount++;
             }
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        void Notify(string name)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
         }
     }
 }
