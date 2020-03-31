@@ -18,20 +18,6 @@ namespace PhotoCat2.ViewModels
     {
         public event PropertyChangedEventHandler PropertyChanged;
 
-        private bool _IsChecked;
-        public bool IsChecked
-        {
-            get => _IsChecked;
-            set
-            {
-                if (_IsChecked != value)
-                {
-                    _IsChecked = value;
-                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsChecked)));
-                }
-            }
-        }
-
         public ICommand OpenCommand { get; set; }
         public ICommand LoadedCommand { get; set; }
         public Action<BitmapImage> OpenRequested = null;

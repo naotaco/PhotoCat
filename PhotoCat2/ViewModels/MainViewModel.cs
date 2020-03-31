@@ -82,10 +82,6 @@ namespace PhotoCat2.ViewModels
 
         private void Items_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
         {
-            if (e.Action == System.Collections.Specialized.NotifyCollectionChangedAction.Add)
-            {
-                LoadedImagesCount++;
-            }
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
