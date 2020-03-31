@@ -42,6 +42,7 @@ namespace PhotoCat2.ViewModels
         public string FullPath { get; }
         string LoadedPath = "";
         public string Title { get; }
+        public string Date { get; }
 
         public BitmapImage Bitmap { get; set; }
 
@@ -51,7 +52,9 @@ namespace PhotoCat2.ViewModels
             LoadedCommand = new RelayCommand(new Action(Loaded));
 
             FullPath = path;
-            Title = System.IO.Path.GetFileName(path);
+            Title = Path.GetFileName(path);
+            var created = File.GetCreationTime(path);
+            Date = created.ToString();
         }
 
         async void OpenImage()
