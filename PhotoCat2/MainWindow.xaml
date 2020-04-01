@@ -85,6 +85,7 @@
                    MouseDown="MainImage_MouseDown"
                    MouseLeftButtonDown="MainImage_MouseLeftButtonDown"
                    MouseLeftButtonUp="MainImage_MouseLeftButtonUp"
+                   MouseLeave="MainImage_MouseLeave"
                    HorizontalAlignment="Center"
                    VerticalAlignment="Center"
                    SnapsToDevicePixels="True"

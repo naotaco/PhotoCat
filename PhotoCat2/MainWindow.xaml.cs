@@ -203,6 +203,8 @@ namespace PhotoCat2
         {
             MainImage.Width = ImageGrid.ActualWidth;
             MainImage.Height = ImageGrid.ActualHeight;
+
+            MainImage.RenderTransform = new TranslateTransform(0, 0);
         }
 
         private void MainImage_MouseDown(object sender, MouseButtonEventArgs e)
@@ -230,9 +232,14 @@ namespace PhotoCat2
             var source = image.Source as BitmapImage;
             if (image != null && source != null)
             {
-                dumpSize(image, "before");
-
                 var RealGridSize = GetElementPixelSize(ImageGrid);
+                var pos = e.GetPosition(sender as IInputElement);
+                var x = pos.X / image.ActualWidth; // 0-1 pos
+                var y = pos.Y / image.ActualHeight;
+                var before_w = image.ActualWidth;
+                var before_h = image.ActualHeight;
+
+                dumpSize(image, "before");
 
                 var ratio = RealGridSize.Width / image.ActualWidth; // real pixels in 1 virtual pixel. 1.25
                 var new_w = source.PixelWidth / ratio; // expected size in virtual pixel
@@ -240,6 +247,18 @@ namespace PhotoCat2
                 Debug.WriteLine("r " + ratio);
                 image.Width = new_w;
                 image.Height = new_h;
+
+                dumpSize(image, "after");
+
+                Debug.WriteLine("w: " + before_w + " " + new_w + " " + x);
+                Debug.WriteLine("h: " + before_h + " " + new_h + " " + y);
+
+                var shift_x = (new_w - before_w) / 2 + (before_w * x) - (new_w * x);
+                var shift_y = (new_h - before_h) / 2 + (before_h * y) - (new_h * y);
+
+                Debug.WriteLine("shift " + shift_x + " " + shift_y);
+
+                image.RenderTransform = new TranslateTransform(shift_x, shift_y);
             }
         }
 
@@ -262,16 +281,22 @@ namespace PhotoCat2
 
         private void MainImage_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
+            RestoreImage(sender);
+        }
+
+        private void RestoreImage(object sender)
+        {
             var image = sender as Image;
             if (image != null)
             {
                 image.Stretch = Stretch.Uniform;
-                //image.Width /= 2;
-                //image.Height /= 2;
                 FitImage();
-                image.RenderTransform = new TranslateTransform(0, 0);
-
             }
+        }
+
+        private void MainImage_MouseLeave(object sender, MouseEventArgs e)
+        {
+            RestoreImage(sender);
         }
 
         private void ScrollViewer_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
@@ -285,5 +310,7 @@ namespace PhotoCat2
         {
             FitImage();
         }
+
+
     }
 }
