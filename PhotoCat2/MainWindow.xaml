@@ -7,7 +7,7 @@
         xmlns:localmodels="clr-namespace:PhotoCat2.ViewModels"
         xmlns:i="clr-namespace:System.Windows.Interactivity;assembly=System.Windows.Interactivity"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800"
+        Title="MainWindow" Height="800" Width="1400"
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
         TextElement.Foreground="{DynamicResource MaterialDesignBody}"
         TextElement.FontWeight="Regular"
@@ -18,7 +18,16 @@
         Background="{DynamicResource MaterialDesignPaper}"
         FontFamily="{DynamicResource MaterialDesignFont}">
 
-    <Grid DragEnter="Grid_DragEnter" DragOver="Grid_DragOver" Drop="Grid_Drop" AllowDrop="True" DragLeave="Grid_DragLeave"  IsHitTestVisible="True" Background="White">
+    <Grid DragEnter="Grid_DragEnter"
+          DragOver="Grid_DragOver" 
+          Drop="Grid_Drop"
+          AllowDrop="True" 
+          DragLeave="Grid_DragLeave" 
+          IsHitTestVisible="True"
+          Background="White"
+          HorizontalAlignment="Stretch"
+          VerticalAlignment="Stretch"
+          SizeChanged="Grid_SizeChanged">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="450"/>
             <ColumnDefinition Width="*"/>
@@ -68,9 +77,19 @@
                 </ListView.ItemTemplate>
             </ListView>
         </ScrollViewer>
-        <Grid Grid.Column="1">
-            <Image x:Name="MainImage" RenderSize="300 200"
-                   MouseDown="MainImage_MouseDown" MouseLeftButtonDown="MainImage_MouseLeftButtonDown" MouseLeftButtonUp="MainImage_MouseLeftButtonUp"/>
+        <Grid Grid.Column="1" x:Name="ImageGrid"
+              HorizontalAlignment="Stretch"
+              VerticalAlignment="Stretch"
+              >
+            <Image x:Name="MainImage" 
+                   MouseDown="MainImage_MouseDown"
+                   MouseLeftButtonDown="MainImage_MouseLeftButtonDown"
+                   MouseLeftButtonUp="MainImage_MouseLeftButtonUp"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"
+                   SnapsToDevicePixels="True"
+                   Stretch="Uniform"
+                   />
         </Grid>
 
         <materialDesign:Card Padding="32" Margin="16" Opacity="0.5" x:Name="DndGuide" Visibility="Collapsed" Grid.ColumnSpan="2">

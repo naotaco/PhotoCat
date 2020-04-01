@@ -173,6 +173,7 @@ namespace PhotoCat2
                             Dispatcher.BeginInvoke(new ThreadStart(delegate
                             {
                                 MainImage.Source = bmp;
+                                FitImage();
                             }));
                         },
                         LoadStarted = () =>
@@ -198,9 +199,29 @@ namespace PhotoCat2
 
         }
 
+        private void FitImage()
+        {
+            MainImage.Width = ImageGrid.ActualWidth;
+            MainImage.Height = ImageGrid.ActualHeight;
+        }
+
         private void MainImage_MouseDown(object sender, MouseButtonEventArgs e)
         {
 
+        }
+
+        void dumpSize(FrameworkElement element, string str)
+        {
+            Debug.WriteLine(str + " Width:" + element.Width);
+            Debug.WriteLine(str + " Height:" + element.Height);
+            Debug.WriteLine(str + " ActualWidth:" + element.ActualWidth);
+            Debug.WriteLine(str + " ActualHeight:" + element.ActualHeight);
+        }
+
+        void dumpImageSize(BitmapImage img, string str)
+        {
+            Debug.WriteLine(str + " PixelWidth: " + img.PixelWidth);
+            Debug.WriteLine(str + " PixelHeight\t: " + img.PixelHeight);
         }
 
         private void MainImage_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
@@ -209,10 +230,34 @@ namespace PhotoCat2
             var source = image.Source as BitmapImage;
             if (image != null && source != null)
             {
-                image.Stretch = Stretch.None;
-                Canvas.SetLeft(image, source.Width / 2);
-                Canvas.SetTop(image, source.Height / 2);
+                dumpSize(image, "before");
+
+                var RealGridSize = GetElementPixelSize(ImageGrid);
+
+                var ratio = RealGridSize.Width / image.ActualWidth; // real pixels in 1 virtual pixel. 1.25
+                var new_w = source.PixelWidth / ratio; // expected size in virtual pixel
+                var new_h = source.PixelHeight / ratio; // expected size in virtual pixel
+                Debug.WriteLine("r " + ratio);
+                image.Width = new_w;
+                image.Height = new_h;
             }
+        }
+
+        public Size GetElementPixelSize(UIElement element)
+        {
+            Matrix transformToDevice = new Matrix();
+            var source = PresentationSource.FromVisual(element);
+            if (source != null)
+            {
+                transformToDevice = source.CompositionTarget.TransformToDevice;
+            }
+
+            if (element.DesiredSize == new Size())
+            {
+                element.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+            }
+
+            return (Size)transformToDevice.Transform((Vector)element.DesiredSize);
         }
 
         private void MainImage_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
@@ -221,6 +266,11 @@ namespace PhotoCat2
             if (image != null)
             {
                 image.Stretch = Stretch.Uniform;
+                //image.Width /= 2;
+                //image.Height /= 2;
+                FitImage();
+                image.RenderTransform = new TranslateTransform(0, 0);
+
             }
         }
 
@@ -229,6 +279,11 @@ namespace PhotoCat2
             ScrollViewer scv = (ScrollViewer)sender;
             scv.ScrollToVerticalOffset(scv.VerticalOffset - e.Delta);
             e.Handled = true;
+        }
+
+        private void Grid_SizeChanged(object sender, SizeChangedEventArgs e)
+        {
+            FitImage();
         }
     }
 }
