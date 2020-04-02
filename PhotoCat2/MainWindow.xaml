@@ -80,6 +80,7 @@
         <Grid Grid.Column="1" x:Name="ImageGrid"
               HorizontalAlignment="Stretch"
               VerticalAlignment="Stretch"
+              ClipToBounds="False"
               >
             <Image x:Name="MainImage" 
                    MouseDown="MainImage_MouseDown"
@@ -90,6 +91,7 @@
                    VerticalAlignment="Center"
                    SnapsToDevicePixels="True"
                    Stretch="Uniform"
+                   ClipToBounds="False"
                    />
         </Grid>
 

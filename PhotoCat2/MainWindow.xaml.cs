@@ -106,6 +106,8 @@ namespace PhotoCat2
 
                 bmp.BeginInit();
                 bmp.StreamSource = ms;
+                bmp.DecodePixelHeight = bmp.PixelHeight;
+                bmp.DecodePixelWidth = bmp.PixelWidth;
                 bmp.EndInit();
                 bmp.Freeze();
 
@@ -204,7 +206,10 @@ namespace PhotoCat2
             MainImage.Width = ImageGrid.ActualWidth;
             MainImage.Height = ImageGrid.ActualHeight;
 
-            MainImage.RenderTransform = new TranslateTransform(0, 0);
+            var transforms = new TransformGroup();
+            transforms.Children.Add(new ScaleTransform(1, 1));
+            transforms.Children.Add(new TranslateTransform(0, 0));
+            MainImage.RenderTransform = transforms;
         }
 
         private void MainImage_MouseDown(object sender, MouseButtonEventArgs e)
@@ -245,8 +250,9 @@ namespace PhotoCat2
                 var new_w = source.PixelWidth / ratio; // expected size in virtual pixel
                 var new_h = source.PixelHeight / ratio; // expected size in virtual pixel
                 Debug.WriteLine("r " + ratio);
-                image.Width = new_w;
-                image.Height = new_h;
+
+                //image.Width = new_w;
+                //image.Height = new_h;
 
                 dumpSize(image, "after");
 
@@ -258,7 +264,12 @@ namespace PhotoCat2
 
                 Debug.WriteLine("shift " + shift_x + " " + shift_y);
 
-                image.RenderTransform = new TranslateTransform(shift_x, shift_y);
+                var mag_ratio = new_w / before_w;
+
+                var transforms = new TransformGroup();
+                transforms.Children.Add(new ScaleTransform(mag_ratio, mag_ratio));
+                transforms.Children.Add(new TranslateTransform(shift_x, shift_y));
+                image.RenderTransform = transforms;
             }
         }
 
