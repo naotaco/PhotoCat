@@ -266,6 +266,8 @@ namespace PhotoCat2
 
                 var mag_ratio = new_w / before_w;
 
+                image.RenderTransformOrigin = new Point(0.5, 0.5);
+
                 var transforms = new TransformGroup();
                 transforms.Children.Add(new ScaleTransform(mag_ratio, mag_ratio));
                 transforms.Children.Add(new TranslateTransform(shift_x, shift_y));
