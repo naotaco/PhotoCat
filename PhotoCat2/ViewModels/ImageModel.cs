@@ -70,28 +70,19 @@ namespace PhotoCat2.ViewModels
             }
 
             Debug.WriteLine("Start Loading: " + FullPath);
-            Bitmap = await Task.Run(() =>
+
+            if (foreground)
             {
-                var bmp = new BitmapImage()
+                Bitmap = await Task.Run(() =>
                 {
-                    DecodePixelHeight = 200,
-                    DecodePixelWidth = 300,
-                };
-                var ms = new MemoryStream();
-                using (var fs = new FileStream(FullPath, FileMode.Open))
-                {
-                    fs.CopyTo(ms);
-                    ms.Seek(0, SeekOrigin.Begin);
-                }
+                    return LoadBitmap();
+                });
+            }
+            else
+            {
+                Bitmap = LoadBitmap();
+            }
 
-                bmp.BeginInit();
-                bmp.StreamSource = ms;
-                bmp.CacheOption = BitmapCacheOption.OnLoad;
-                bmp.EndInit();
-                bmp.Freeze();
-
-                return bmp;
-            });
             LoadedPath = FullPath;
             Debug.WriteLine("Loaded: " + FullPath);
 
@@ -100,6 +91,28 @@ namespace PhotoCat2.ViewModels
             return Bitmap;
         }
 
+        private BitmapImage LoadBitmap()
+        {
+            var bmp = new BitmapImage()
+            {
+                DecodePixelHeight = 200,
+                DecodePixelWidth = 300,
+            };
+            var ms = new MemoryStream();
+            using (var fs = new FileStream(FullPath, FileMode.Open))
+            {
+                fs.CopyTo(ms);
+                ms.Seek(0, SeekOrigin.Begin);
+            }
+
+            bmp.BeginInit();
+            bmp.StreamSource = ms;
+            bmp.CacheOption = BitmapCacheOption.OnLoad;
+            bmp.EndInit();
+            bmp.Freeze();
+
+            return bmp;
+        }
 
         public bool PrefetchRequired()
         {

@@ -16,7 +16,7 @@ namespace PhotoCat2.ViewModels
     {
         public ObservableCollection<ImageModel> Items { get; } = new ObservableCollection<ImageModel>();
         int PrefetchCount = 0;
-        const int MAX_PREFETCH = 10;
+        const int MAX_PREFETCH = 100;
 
         private int _TotalImages = 0;
         public int TotalImages
@@ -104,9 +104,12 @@ namespace PhotoCat2.ViewModels
             PrefetchCount++;
             var index = Items.IndexOf(loaded);
             Debug.WriteLine("Item " + index + " prefetch completed");
-            if (PrefetchCount < MAX_PREFETCH)
+            if (PrefetchCount < MAX_PREFETCH && (index + 1) < Items.Count)
             {
-                Items[index + 1].StartPrefetch();
+                Task.Run(() =>
+                {
+                    Items[index + 1].StartPrefetch();
+                });
             }
         }
 
