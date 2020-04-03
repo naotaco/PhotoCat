@@ -17,6 +17,8 @@ namespace PhotoCat2.ViewModels
     {
         public ObservableCollection<ImageModel> Items { get; } = new ObservableCollection<ImageModel>();
         int PrefetchCount = 0;
+
+        // todo: Expose settings related to performance to users.
         const int MAX_PREFETCH = 10;
         const int LOAD_CONCURRENCY = 4;
 
@@ -99,12 +101,13 @@ namespace PhotoCat2.ViewModels
         {
             var startIndex = Items.IndexOf(loaded) + 1;
             var num = Math.Min(MAX_PREFETCH, Items.Count - startIndex);
+
             TotalImages = num;
             LoadedImagesCount = 0;
 
             Task.Run(() =>
             {
-                StartPrefetchAll(startIndex, num);
+                StartPrefetch(startIndex, num);
             });
         }
 
@@ -113,22 +116,11 @@ namespace PhotoCat2.ViewModels
             LoadedImagesCount++;
         }
 
-        private void LoadNext(ImageModel loaded)
+        public void StartPrefetch(int startIndex, int num)
         {
-            PrefetchCount++;
-            var index = Items.IndexOf(loaded);
-            Debug.WriteLine("Item " + index + " prefetch completed");
-            if (PrefetchCount < MAX_PREFETCH && (index + 1) < Items.Count)
-            {
-                Task.Run(() =>
-                {
-                    Items[index + 1].StartPrefetch();
-                });
-            }
-        }
+            // todo: Accept cancel operation using CancellationToken.
+            // todo: Dispose images
 
-        public void StartPrefetchAll(int startIndex, int num)
-        {
             var options = new ParallelOptions() { MaxDegreeOfParallelism = LOAD_CONCURRENCY };
 
             var items = new List<ImageModel>(num);
