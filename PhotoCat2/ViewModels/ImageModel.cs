@@ -71,16 +71,24 @@ namespace PhotoCat2.ViewModels
 
             Debug.WriteLine("Start Loading: " + FullPath);
 
-            if (foreground)
+            try
             {
-                Bitmap = await Task.Run(() =>
+                if (foreground)
                 {
-                    return LoadBitmap();
-                });
+                    Bitmap = await Task.Run(() =>
+                    {
+                        return LoadBitmap();
+                    });
+                }
+                else
+                {
+                    Bitmap = LoadBitmap();
+                }
             }
-            else
+            catch (IOException e)
             {
-                Bitmap = LoadBitmap();
+                Debug.WriteLine("Caught IOExeption on opening image. " + e.Message);
+                return null;
             }
 
             LoadedPath = FullPath;

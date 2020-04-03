@@ -98,7 +98,7 @@
         <materialDesign:Card Padding="32" Margin="16" Opacity="0.5" x:Name="DndGuide" Visibility="Collapsed" Grid.ColumnSpan="2">
             <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Style="{DynamicResource MaterialDesignTitleTextBlock}">Drop JPG files here!</TextBlock>
         </materialDesign:Card>
-        <ProgressBar IsIndeterminate="False" Value="{Binding LoadingProgress, Mode=OneWay}" VerticalAlignment="Bottom" Visibility="{Binding IsLoadingInfoVisible, Mode=OneWay}"/>
+        <ProgressBar IsIndeterminate="False" Minimum="0" Maximum="1.0" Value="{Binding LoadingProgress, Mode=OneWay}" VerticalAlignment="Bottom" Visibility="{Binding IsLoadingInfoVisible, Mode=OneWay}"/>
         <ProgressBar IsIndeterminate="True" VerticalAlignment="Bottom" x:Name="MainImageProgress" Visibility="Collapsed" Grid.Column="1"/>
     </Grid>
 </Window>

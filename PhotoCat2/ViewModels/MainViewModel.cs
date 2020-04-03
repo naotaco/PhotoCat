@@ -6,6 +6,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 
@@ -16,7 +17,8 @@ namespace PhotoCat2.ViewModels
     {
         public ObservableCollection<ImageModel> Items { get; } = new ObservableCollection<ImageModel>();
         int PrefetchCount = 0;
-        const int MAX_PREFETCH = 100;
+        const int MAX_PREFETCH = 10;
+        const int LOAD_CONCURRENCY = 4;
 
         private int _TotalImages = 0;
         public int TotalImages
@@ -74,7 +76,7 @@ namespace PhotoCat2.ViewModels
             get
             {
                 if (TotalImages == 0) { return 0; }
-                return LoadedImagesCount / TotalImages;
+                return (double)LoadedImagesCount / (double)TotalImages;
             }
         }
 
@@ -93,10 +95,22 @@ namespace PhotoCat2.ViewModels
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
         }
+        void ItemLoadCompleted(ImageModel loaded)
+        {
+            var startIndex = Items.IndexOf(loaded) + 1;
+            var num = Math.Min(MAX_PREFETCH, Items.Count - startIndex);
+            TotalImages = num;
+            LoadedImagesCount = 0;
+
+            Task.Run(() =>
+            {
+                StartPrefetchAll(startIndex, num);
+            });
+        }
 
         void ItemPrefetchCompleted(ImageModel loaded)
         {
-            LoadNext(loaded);
+            LoadedImagesCount++;
         }
 
         private void LoadNext(ImageModel loaded)
@@ -113,10 +127,23 @@ namespace PhotoCat2.ViewModels
             }
         }
 
-        void ItemLoadCompleted(ImageModel loaded)
+        public void StartPrefetchAll(int startIndex, int num)
         {
-            LoadNext(loaded);
+            var options = new ParallelOptions() { MaxDegreeOfParallelism = LOAD_CONCURRENCY };
+
+            var items = new List<ImageModel>(num);
+
+            for (int i = 0; i < num; i++)
+            {
+                items.Add(Items[startIndex + i]);
+            }
+
+            Parallel.ForEach(items, options, (item) =>
+            {
+                item.StartPrefetch();
+            });
         }
+
 
         public void AddItem(ImageModel item)
         {
