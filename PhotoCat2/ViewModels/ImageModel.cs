@@ -22,8 +22,8 @@ namespace PhotoCat2.ViewModels
         public ICommand LoadedCommand { get; set; }
         public Action<BitmapImage> OpenRequested = null;
         public Action LoadStarted = null;
-        public Action LoadFinished = null;
-        public Action ContentLoaded = null;
+        public Action<ImageModel> LoadFinished = null;
+        public Action<ImageModel> PrefetchFinished = null;
 
         public string FullPath { get; }
         string LoadedPath = "";
@@ -35,7 +35,7 @@ namespace PhotoCat2.ViewModels
         public ImageModel(string path)
         {
             OpenCommand = new RelayCommand(new Action(OpenImage));
-            LoadedCommand = new RelayCommand(new Action(Loaded));
+            // LoadedCommand = new RelayCommand(new Action(Loaded));
 
             FullPath = path;
             Title = Path.GetFileName(path);
@@ -45,47 +45,65 @@ namespace PhotoCat2.ViewModels
 
         async void OpenImage()
         {
+
             Debug.WriteLine("Open!");
 
             LoadStarted?.Invoke();
 
-            if (LoadedPath != FullPath)
-            {
-                Bitmap = await Task.Run(() =>
-                {
-                    var bmp = new BitmapImage()
-                    {
-                        DecodePixelHeight = 200,
-                        DecodePixelWidth = 300,
-                    };
-                    var ms = new MemoryStream();
-                    using (var fs = new FileStream(FullPath, FileMode.Open))
-                    {
-                        fs.CopyTo(ms);
-                        ms.Seek(0, SeekOrigin.Begin);
-                    }
+            var bitmap = await _OpenImage(true);
 
-                    bmp.BeginInit();
-                    bmp.StreamSource = ms;
-                    bmp.CacheOption = BitmapCacheOption.OnLoad;
-                    bmp.EndInit();
-                    bmp.Freeze();
-
-                    return bmp;
-                });
-                LoadedPath = FullPath;
-
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Bitmap)));
-
-            }
-
-            OpenRequested?.Invoke(Bitmap);
-            LoadFinished?.Invoke();
+            OpenRequested?.Invoke(bitmap);
+            LoadFinished?.Invoke(this);
         }
 
-        void Loaded()
+        public async void StartPrefetch()
         {
-            ContentLoaded?.Invoke();
+            var _bitmap = await _OpenImage(false);
+            PrefetchFinished?.Invoke(this);
+        }
+
+        private async Task<BitmapImage> _OpenImage(bool foreground)
+        {
+            if (!PrefetchRequired())
+            {
+                return Bitmap;
+            }
+
+            Debug.WriteLine("Start Loading: " + FullPath);
+            Bitmap = await Task.Run(() =>
+            {
+                var bmp = new BitmapImage()
+                {
+                    DecodePixelHeight = 200,
+                    DecodePixelWidth = 300,
+                };
+                var ms = new MemoryStream();
+                using (var fs = new FileStream(FullPath, FileMode.Open))
+                {
+                    fs.CopyTo(ms);
+                    ms.Seek(0, SeekOrigin.Begin);
+                }
+
+                bmp.BeginInit();
+                bmp.StreamSource = ms;
+                bmp.CacheOption = BitmapCacheOption.OnLoad;
+                bmp.EndInit();
+                bmp.Freeze();
+
+                return bmp;
+            });
+            LoadedPath = FullPath;
+            Debug.WriteLine("Loaded: " + FullPath);
+
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Bitmap)));
+
+            return Bitmap;
+        }
+
+
+        public bool PrefetchRequired()
+        {
+            return LoadedPath != FullPath;
         }
     }
 }

@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -14,6 +15,8 @@ namespace PhotoCat2.ViewModels
     public class MainViewModel : INotifyPropertyChanged
     {
         public ObservableCollection<ImageModel> Items { get; } = new ObservableCollection<ImageModel>();
+        int PrefetchCount = 0;
+        const int MAX_PREFETCH = 10;
 
         private int _TotalImages = 0;
         public int TotalImages
@@ -89,6 +92,34 @@ namespace PhotoCat2.ViewModels
         void Notify(string name)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+        }
+
+        void ItemPrefetchCompleted(ImageModel loaded)
+        {
+            LoadNext(loaded);
+        }
+
+        private void LoadNext(ImageModel loaded)
+        {
+            PrefetchCount++;
+            var index = Items.IndexOf(loaded);
+            Debug.WriteLine("Item " + index + " prefetch completed");
+            if (PrefetchCount < MAX_PREFETCH)
+            {
+                Items[index + 1].StartPrefetch();
+            }
+        }
+
+        void ItemLoadCompleted(ImageModel loaded)
+        {
+            LoadNext(loaded);
+        }
+
+        public void AddItem(ImageModel item)
+        {
+            item.LoadFinished += ItemLoadCompleted;
+            item.PrefetchFinished += ItemPrefetchCompleted;
+            Items.Add(item);
         }
     }
 }

@@ -168,7 +168,7 @@ namespace PhotoCat2
             {
                 await Dispatcher.BeginInvoke(new ThreadStart(delegate
                 {
-                    GetVM().Items.Add(new ImageModel(f)
+                    GetVM().AddItem(new ImageModel(f)
                     {
                         OpenRequested = (bmp) =>
                         {
@@ -185,13 +185,14 @@ namespace PhotoCat2
                                 MainImageProgress.Visibility = Visibility.Visible;
                             }));
                         },
-                        LoadFinished = () =>
+                        LoadFinished = (l) =>
                         {
                             Dispatcher.BeginInvoke(new ThreadStart(delegate
                             {
                                 MainImageProgress.Visibility = Visibility.Collapsed;
                             }));
                         },
+                        PrefetchFinished = (l) => { },
                     });
 
                 }), System.Windows.Threading.DispatcherPriority.ApplicationIdle, null);
