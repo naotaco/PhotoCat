@@ -62,13 +62,13 @@ jobs:
 
 
     # Build the Windows Application Packaging project
-    - name: Build the Windows Application Packaging Project
-      run: msbuild $env:Solution_Path /p:Platform=$env:TargetPlatform /p:Configuration=$env:Configuration /p:UapAppxPackageBuildMode=$env:BuildMode /p:AppxBundle=$env:AppxBundle /p:PackageCertificateKeyFile=$env:SigningCertificate /p:PackageCertificatePassword=${{ secrets.Pfx_Key }}
-      env:
-        AppxBundle: Never
-        BuildMode: SideloadOnly
-        Configuration: Release
-        TargetPlatform: Any CPU
+    # - name: Build the Windows Application Packaging Project
+    #   run: msbuild $env:Solution_Path /p:Platform=$env:TargetPlatform /p:Configuration=$env:Configuration /p:UapAppxPackageBuildMode=$env:BuildMode /p:AppxBundle=$env:AppxBundle /p:PackageCertificateKeyFile=$env:SigningCertificate /p:PackageCertificatePassword=${{ secrets.Pfx_Key }}
+    #   env:
+    #     AppxBundle: Never
+    #     BuildMode: SideloadOnly
+    #     Configuration: Release
+    #     TargetPlatform: Any CPU
 
     - name: Restore NuGet packages
       uses: warrenbuckley/Setup-Nuget@v1
