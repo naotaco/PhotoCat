@@ -105,21 +105,39 @@ namespace PhotoCat2.ViewModels
             CancelPrefetchOperations();
         }
 
-        public void ItemLoadCompleted(ImageModel loaded)
+        public void PrefetchImages(ImageModel loadedMainImage)
         {
-            var startIndex = Items.IndexOf(loaded) + 1;
-            var num = Math.Min(Items.Count - startIndex + 1, PreFetchNum);
+            var currentIndex = Items.IndexOf(loadedMainImage);
+            var frontStartIndex = currentIndex + 1;
+            var frontNum = Math.Min(Items.Count - frontStartIndex, PreFetchNum);
 
-            TotalImages = num;
+            var backNum = Math.Min(currentIndex, PreFetchNum / 3);
+            var backStartIndex = Math.Max(0, currentIndex - backNum);
+
+            TotalImages = frontNum;
             LoadedImagesCount = 0;
 
             Task.Run(() =>
             {
-                StartPrefetch(startIndex, num);
+                var loadItems = new List<ImageModel>(frontNum + backNum);
+                for (int i = frontStartIndex; i < (frontStartIndex + frontNum); i++)
+                {
+                    loadItems.Add(Items[i]);
+                }
+                for (int i = (backStartIndex + backNum); i >= backStartIndex; i--)
+                {
+                    loadItems.Add(Items[i]);
+                }
+                StartPrefetch(loadItems);
+
             });
 
-            UnloadImages(0, startIndex - 1);
-
+            Task.Run(() =>
+            {
+                UnloadImages(0, backStartIndex - 1);
+                UnloadImages(frontStartIndex + frontNum, Items.Count - (frontStartIndex + frontNum));
+                GC.Collect();
+            });
         }
 
         public void ItemPrefetchCompleted(ImageModel loaded)
@@ -127,14 +145,12 @@ namespace PhotoCat2.ViewModels
             LoadedImagesCount++;
         }
 
-        async void StartPrefetch(int startIndex, int num)
+        async void StartPrefetch(List<ImageModel> items)
         {
             // todo: Accept cancel operation using CancellationToken.
-            // todo: Limit number of loaded/decoded images and dispose unnecessary images
 
-            for (int i = startIndex; i < (startIndex + num); i++)
+            foreach (var item in items)
             {
-                var item = Items[i];
 
                 // Load sequentially.
                 LoadCancellationTokenSource = new CancellationTokenSource();
@@ -171,14 +187,14 @@ namespace PhotoCat2.ViewModels
             }
         }
 
-        public async void UnloadImages(int startIndex, int num)
+        void UnloadImages(int startIndex, int num)
         {
-
             for (int i = startIndex; i < (startIndex + num); i++)
             {
                 Items[i].Clear();
             }
         }
+
         void CancelPrefetchOperations()
         {
             if (LoadCancellationTokenSource != null)
@@ -194,12 +210,8 @@ namespace PhotoCat2.ViewModels
             }
         }
 
-
         public void AddItem(ImageModel item)
         {
-            //item.LoadStarted += ItemSelected;
-            //item.LoadFinished += ItemLoadCompleted;
-            //item.PrefetchFinished += ItemPrefetchCompleted;
             Items.Add(item);
         }
     }

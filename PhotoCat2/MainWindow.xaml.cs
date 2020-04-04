@@ -191,7 +191,7 @@ namespace PhotoCat2
                             Dispatcher.BeginInvoke(new ThreadStart(delegate
                             {
                                 MainImageProgress.Visibility = Visibility.Collapsed;
-                                GetVM().ItemLoadCompleted(loaded);
+                                GetVM().PrefetchImages(loaded);
 
                             }), System.Windows.Threading.DispatcherPriority.Background);
 
