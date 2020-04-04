@@ -25,11 +25,9 @@ jobs:
     runs-on: windows-latest
 
     env:
-      App_Packages_Directory: AppPackages
-      SigningCertificate: GitHubActionsDemo.pfx
-      Solution_Path: MyWpfApp.sln
-      Test_Project_Path: MyWpfApp.Tests\MyWpfApp.Tests.csproj
-      Wpf_Project_Path: MyWpfApp\MyWpfApp.csproj
+      App_Packages_Directory: PhotoCat2
+      Solution_Path: PhotoCat2.sln
+      Wpf_Project_Path: PhotoCat2\PhotoCat2.csproj
       Wap_Project_Directory: MyWpfApp.Package
       Wap_Project_Name: MyWpfApp.Package.wapproj
 
@@ -55,17 +53,6 @@ jobs:
     - name: Setup MSBuild.exe
       uses: microsoft/setup-msbuild@v1.0.0
 
-    # Update the version before build
-    - name: Update manifest version
-      run: |
-        [xml]$manifest = get-content ".\$env:Wap_Project_Directory\Package.appxmanifest"
-        $manifest.Package.Identity.Version = "$env:NBGV_SimpleVersion.0"
-        $manifest.save(".\$env:Wap_Project_Directory\Package.appxmanifest")
-
-    # Test
-    - name: Execute Unit Tests
-      run: dotnet test $env:Test_Project_Path
-
     # Restore the application
     - name:  Restore the Wpf application to populate the obj folder
       run: msbuild $env:Solution_Path /t:Restore /p:Configuration=$env:Configuration /p:RuntimeIdentifier=$env:RuntimeIdentifier
@@ -73,13 +60,6 @@ jobs:
         Configuration: Debug
         RuntimeIdentifier: win-${{ matrix.targetplatform }}
 
-    # Decode the Base64 encoded Pfx
-    - name: Decode the Pfx
-      run: |
-        $pfx_cert_byte = [System.Convert]::FromBase64String("${{ secrets.Base64_Encoded_Pfx }}")
-        $currentDirectory = Get-Location
-        $certificatePath = Join-Path -Path $currentDirectory -ChildPath $env:Wap_Project_Directory -AdditionalChildPath $env:SigningCertificate
-        [IO.File]::WriteAllBytes("$certificatePath", $pfx_cert_byte)
 
     # Build the Windows Application Packaging project
     - name: Build the Windows Application Packaging Project (wapproj)
