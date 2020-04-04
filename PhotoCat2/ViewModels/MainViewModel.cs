@@ -169,7 +169,6 @@ namespace PhotoCat2.ViewModels
 
                 if (succeed)
                 {
-                    Debug.WriteLine("Load CTS Disposed.");
                     LoadCancellationTokenSource?.Dispose();
                     LoadCancellationTokenSource = null;
                 }

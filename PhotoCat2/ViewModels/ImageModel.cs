@@ -93,9 +93,20 @@ namespace PhotoCat2.ViewModels
                 Bitmap = await _OpenImage(true);
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Bitmap)));
             }
-            else
+            else if (TransitState(State.Decoded, State.Loading))
             {
-                Debug.WriteLine("Not to open. in " + ImageState);
+                // In case it's already decoded state, check image data.
+                if (Bitmap == null || Bitmap.PixelWidth == 0 || Bitmap.PixelHeight == 0)
+                {
+                    // Maybe previous loading failed.
+                    Debug.WriteLine("Reload image: " + FullPath);
+                    Bitmap = await _OpenImage(true);
+                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Bitmap)));
+                }
+                else
+                {
+                    Debug.WriteLine("Not to open. in " + ImageState);
+                }
             }
             OpenRequested?.Invoke(Bitmap);
             LoadFinished?.Invoke(this);
@@ -104,6 +115,11 @@ namespace PhotoCat2.ViewModels
 
         public void Clear()
         {
+            if (ImageState == State.NotLoaded)
+            {
+                return;
+            }
+
             Debug.WriteLine("Clear:" + FullPath);
             lock (this)
             {
@@ -151,7 +167,7 @@ namespace PhotoCat2.ViewModels
             Debug.WriteLine("Decode requested: " + FullPath);
             if (!TransitState(State.Loaded, State.Decoding))
             {
-                Debug.WriteLine("Maybe to load : " + FullPath);
+                Debug.WriteLine("Maybe failed to load : " + FullPath);
                 PrefetchFinished?.Invoke(this);
 
                 TransitState(State.Decoding, State.NotLoaded);
@@ -160,7 +176,7 @@ namespace PhotoCat2.ViewModels
 
             if (PreLoadData == null)
             {
-                Debug.WriteLine("Maybe to load : " + FullPath);
+                Debug.WriteLine("Maybe failed to load : " + FullPath);
                 PrefetchFinished?.Invoke(this);
 
                 TransitState(State.Decoding, State.NotLoaded);
@@ -171,7 +187,6 @@ namespace PhotoCat2.ViewModels
             sw.Start();
 
             Bitmap = DecodeImage(PreLoadData);
-
 
             if (Bitmap == null)
             {
@@ -191,7 +206,8 @@ namespace PhotoCat2.ViewModels
                 TransitState(State.Decoding, State.Decoded);
             }
 
-
+            PreLoadData?.Dispose();
+            PreLoadData = null;
             // todo: Free memorystream after decode finished.
         }
 
