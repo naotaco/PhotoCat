@@ -109,9 +109,13 @@ namespace PhotoCat2.ViewModels
             {
                 ImageState = State.NotLoaded;
                 LoadedPath = "";
+
                 Bitmap = null;
+                PreLoadData?.Dispose();
                 PreLoadData = null;
             }
+
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Bitmap)));
         }
 
         public async Task<bool> Load(CancellationToken ct)

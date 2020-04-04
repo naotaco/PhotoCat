@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Threading;
 
 namespace PhotoCat2.ViewModels
 {
@@ -98,14 +99,13 @@ namespace PhotoCat2.ViewModels
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
         }
-        
-        void ItemSelected(ImageModel selected)
+
+        public void ItemSelected(ImageModel selected)
         {
-            var selectedIndex = Items.IndexOf(selected);
             CancelPrefetchOperations();
         }
 
-        void ItemLoadCompleted(ImageModel loaded)
+        public void ItemLoadCompleted(ImageModel loaded)
         {
             var startIndex = Items.IndexOf(loaded) + 1;
             var num = Math.Min(Items.Count - startIndex + 1, PreFetchNum);
@@ -117,14 +117,17 @@ namespace PhotoCat2.ViewModels
             {
                 StartPrefetch(startIndex, num);
             });
+
+            UnloadImages(0, startIndex - 1);
+
         }
 
-        void ItemPrefetchCompleted(ImageModel loaded)
+        public void ItemPrefetchCompleted(ImageModel loaded)
         {
             LoadedImagesCount++;
         }
 
-        public async void StartPrefetch(int startIndex, int num)
+        async void StartPrefetch(int startIndex, int num)
         {
             // todo: Accept cancel operation using CancellationToken.
             // todo: Limit number of loaded/decoded images and dispose unnecessary images
@@ -165,11 +168,17 @@ namespace PhotoCat2.ViewModels
                 {
                     Debug.WriteLine("Failed to queue decoding ");
                 }
-
-
             }
         }
 
+        public async void UnloadImages(int startIndex, int num)
+        {
+
+            for (int i = startIndex; i < (startIndex + num); i++)
+            {
+                Items[i].Clear();
+            }
+        }
         void CancelPrefetchOperations()
         {
             if (LoadCancellationTokenSource != null)
@@ -188,9 +197,9 @@ namespace PhotoCat2.ViewModels
 
         public void AddItem(ImageModel item)
         {
-            item.LoadStarted += ItemSelected;
-            item.LoadFinished += ItemLoadCompleted;
-            item.PrefetchFinished += ItemPrefetchCompleted;
+            //item.LoadStarted += ItemSelected;
+            //item.LoadFinished += ItemLoadCompleted;
+            //item.PrefetchFinished += ItemPrefetchCompleted;
             Items.Add(item);
         }
     }

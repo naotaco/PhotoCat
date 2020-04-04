@@ -178,21 +178,31 @@ namespace PhotoCat2
                                 FitImage();
                             }));
                         },
-                        LoadStarted = (l) =>
+                        LoadStarted = (selected) =>
                         {
                             Dispatcher.BeginInvoke(new ThreadStart(delegate
                             {
                                 MainImageProgress.Visibility = Visibility.Visible;
-                            }));
+                                GetVM().ItemSelected(selected);
+                            }), System.Windows.Threading.DispatcherPriority.Background);
                         },
-                        LoadFinished = (l) =>
+                        LoadFinished = (loaded) =>
                         {
                             Dispatcher.BeginInvoke(new ThreadStart(delegate
                             {
                                 MainImageProgress.Visibility = Visibility.Collapsed;
-                            }));
+                                GetVM().ItemLoadCompleted(loaded);
+
+                            }), System.Windows.Threading.DispatcherPriority.Background);
+
                         },
-                        PrefetchFinished = (l) => { },
+                        PrefetchFinished = (loaded) =>
+                        {
+                            Dispatcher.BeginInvoke(new ThreadStart(delegate
+                            {
+                                GetVM().ItemPrefetchCompleted(loaded);
+                            }), System.Windows.Threading.DispatcherPriority.Background);
+                        },
                     });
 
                 }), System.Windows.Threading.DispatcherPriority.ApplicationIdle, null);
