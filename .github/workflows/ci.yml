@@ -77,13 +77,8 @@ jobs:
 
     - run: msbuild ${{ env.Wpf_Project_Path }} -p:Configuration=Release
 
-    # Remove the .pfx
-    - name: Remove the .pfx
-      run: Remove-Item -path $env:Wap_Project_Directory\$env:SigningCertificate
-
-    # Upload the MSIX package: https://github.com/marketplace/actions/upload-artifact
     - name: Upload build artifacts
       uses: actions/upload-artifact@v1
       with:
-        name: MSIX Package
+        name: PhotoCat2 Release binary
         path: ${{ env.App_Packages_Directory }}\bin\Release
