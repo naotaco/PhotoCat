@@ -71,11 +71,13 @@ jobs:
         TargetPlatform: Any CPU
 
     - name: Restore NuGet packages
-    - uses: warrenbuckley/Setup-Nuget@v1
+      uses: warrenbuckley/Setup-Nuget@v1
+
     - run: nuget restore ${{ env.Wpf_Project_Path }}
+
     - uses: warrenbuckley/Setup-MSBuild@v1
+
     - run: msbuild ${{ env.Wpf_Project_Path }} -p:Configuration=Release
-      timeout-minutes: 5
 
     # Remove the .pfx
     - name: Remove the .pfx
