@@ -22,7 +22,7 @@ namespace PhotoCat2.ViewModels
         public ICommand OpenCommand { get; set; }
         public ICommand LoadedCommand { get; set; }
         public Action<BitmapImage> OpenRequested = null;
-        public Action LoadStarted = null;
+        public Action<ImageModel> LoadStarted = null;
         public Action<ImageModel> LoadFinished = null;
         public Action<ImageModel> PrefetchFinished = null;
 
@@ -81,7 +81,7 @@ namespace PhotoCat2.ViewModels
         {
 
             Debug.WriteLine("Open!");
-            LoadStarted?.Invoke();
+            LoadStarted?.Invoke(this);
 
             if (TransitState(State.NotLoaded, State.Loading))
             {

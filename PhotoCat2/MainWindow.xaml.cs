@@ -178,7 +178,7 @@ namespace PhotoCat2
                                 FitImage();
                             }));
                         },
-                        LoadStarted = () =>
+                        LoadStarted = (l) =>
                         {
                             Dispatcher.BeginInvoke(new ThreadStart(delegate
                             {

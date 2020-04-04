@@ -20,6 +20,8 @@ namespace PhotoCat2.ViewModels
         CancellationTokenSource LoadCancellationTokenSource = null;
         CancellationTokenSource DecodeCancellationTokenSource = null;
 
+        public int PreFetchNum { get; set; } = 10;
+
         private int _TotalImages = 0;
         public int TotalImages
         {
@@ -96,10 +98,17 @@ namespace PhotoCat2.ViewModels
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
         }
+        
+        void ItemSelected(ImageModel selected)
+        {
+            var selectedIndex = Items.IndexOf(selected);
+            CancelPrefetchOperations();
+        }
+
         void ItemLoadCompleted(ImageModel loaded)
         {
             var startIndex = Items.IndexOf(loaded) + 1;
-            var num = Items.Count - startIndex + 1;
+            var num = Math.Min(Items.Count - startIndex + 1, PreFetchNum);
 
             TotalImages = num;
             LoadedImagesCount = 0;
@@ -120,13 +129,13 @@ namespace PhotoCat2.ViewModels
             // todo: Accept cancel operation using CancellationToken.
             // todo: Limit number of loaded/decoded images and dispose unnecessary images
 
-            for (int i = startIndex; i < num; i++)
+            for (int i = startIndex; i < (startIndex + num); i++)
             {
                 var item = Items[i];
 
                 // Load sequentially.
                 LoadCancellationTokenSource = new CancellationTokenSource();
-                LoadCancellationTokenSource.CancelAfter(3000);
+                //LoadCancellationTokenSource.CancelAfter(3000);
 
                 var succeed = false;
                 try
@@ -147,17 +156,21 @@ namespace PhotoCat2.ViewModels
                 }
 
                 // Decode parallelly.
-                DecodeCancellationTokenSource = new CancellationTokenSource();
-                ThreadPool.QueueUserWorkItem(new WaitCallback((a) =>
+                var queued = ThreadPool.QueueUserWorkItem(new WaitCallback((a) =>
                 {
+                    // todo: sometimes, it stuck in decoding state
                     item.Decode();
-                }), DecodeCancellationTokenSource.Token);
+                }));
+                if (!queued)
+                {
+                    Debug.WriteLine("Failed to queue decoding ");
+                }
 
 
             }
         }
 
-        void CancelOperations()
+        void CancelPrefetchOperations()
         {
             if (LoadCancellationTokenSource != null)
             {
@@ -175,6 +188,7 @@ namespace PhotoCat2.ViewModels
 
         public void AddItem(ImageModel item)
         {
+            item.LoadStarted += ItemSelected;
             item.LoadFinished += ItemLoadCompleted;
             item.PrefetchFinished += ItemPrefetchCompleted;
             Items.Add(item);
