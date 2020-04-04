@@ -154,7 +154,7 @@ namespace PhotoCat2.ViewModels
 
                 // Load sequentially.
                 LoadCancellationTokenSource = new CancellationTokenSource();
-                //LoadCancellationTokenSource.CancelAfter(3000);
+                LoadCancellationTokenSource.CancelAfter(3000);
 
                 var succeed = false;
                 try

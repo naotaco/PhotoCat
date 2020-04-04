@@ -96,7 +96,7 @@ namespace PhotoCat2.ViewModels
             else if (TransitState(State.Decoded, State.Loading))
             {
                 // In case it's already decoded state, check image data.
-                if (Bitmap == null || Bitmap.PixelWidth == 0 || Bitmap.PixelHeight == 0)
+                if (Bitmap == null || Bitmap.PixelWidth < 2 || Bitmap.PixelHeight < 2)
                 {
                     // Maybe previous loading failed.
                     Debug.WriteLine("Reload image: " + FullPath);
