@@ -68,7 +68,7 @@ jobs:
         AppxBundle: Never
         BuildMode: SideloadOnly
         Configuration: Release
-        TargetPlatform: ${{ matrix.targetplatform }}
+        TargetPlatform: Any CPU
 
     # Remove the .pfx
     - name: Remove the .pfx
