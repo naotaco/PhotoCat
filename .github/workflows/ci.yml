@@ -73,7 +73,7 @@ jobs:
     - name: Restore NuGet packages
       uses: warrenbuckley/Setup-Nuget@v1
 
-    - run: nuget restore ${{ env.Wpf_Project_Path }}
+    - run: nuget restore ${{ env.Wpf_Project_Path }} -PackagesDirectory packages
 
     - uses: warrenbuckley/Setup-MSBuild@v1
 
