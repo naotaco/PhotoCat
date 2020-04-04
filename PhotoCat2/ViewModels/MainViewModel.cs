@@ -17,6 +17,9 @@ namespace PhotoCat2.ViewModels
     {
         public ObservableCollection<ImageModel> Items { get; } = new ObservableCollection<ImageModel>();
 
+        CancellationTokenSource LoadCancellationTokenSource = null;
+        CancellationTokenSource DecodeCancellationTokenSource = null;
+
         private int _TotalImages = 0;
         public int TotalImages
         {
@@ -80,6 +83,7 @@ namespace PhotoCat2.ViewModels
         public MainViewModel()
         {
             Items.CollectionChanged += Items_CollectionChanged;
+            ThreadPool.SetMaxThreads(2, 1);
         }
 
         private void Items_CollectionChanged(object sender, System.Collections.Specialized.NotifyCollectionChangedEventArgs e)
@@ -111,24 +115,60 @@ namespace PhotoCat2.ViewModels
             LoadedImagesCount++;
         }
 
-        public void StartPrefetch(int startIndex, int num)
+        public async void StartPrefetch(int startIndex, int num)
         {
             // todo: Accept cancel operation using CancellationToken.
             // todo: Limit number of loaded/decoded images and dispose unnecessary images
 
-            for (int i = 0; i < num; i++)
+            for (int i = startIndex; i < num; i++)
             {
                 var item = Items[i];
 
-                // Load sequentially,
-                item.Load();
+                // Load sequentially.
+                LoadCancellationTokenSource = new CancellationTokenSource();
+                LoadCancellationTokenSource.CancelAfter(3000);
+
+                var succeed = false;
+                try
+                {
+                    succeed = await item.Load(LoadCancellationTokenSource.Token);
+                }
+                catch (TaskCanceledException e)
+                {
+                    Debug.WriteLine("Task cancelled due to timeout.");
+                    item.Clear();
+                }
+
+                if (succeed)
+                {
+                    Debug.WriteLine("Load CTS Disposed.");
+                    LoadCancellationTokenSource?.Dispose();
+                    LoadCancellationTokenSource = null;
+                }
 
                 // Decode parallelly.
-                ThreadPool.QueueUserWorkItem((a) =>
+                DecodeCancellationTokenSource = new CancellationTokenSource();
+                ThreadPool.QueueUserWorkItem(new WaitCallback((a) =>
                 {
                     item.Decode();
-                });
+                }), DecodeCancellationTokenSource.Token);
 
+
+            }
+        }
+
+        void CancelOperations()
+        {
+            if (LoadCancellationTokenSource != null)
+            {
+                Debug.WriteLine("Load CTS Cancel request.");
+                LoadCancellationTokenSource?.Cancel();
+            }
+
+            if (DecodeCancellationTokenSource != null)
+            {
+                Debug.WriteLine("Decode CTS Cancel request.");
+                DecodeCancellationTokenSource?.Cancel();
             }
         }
 

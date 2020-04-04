@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -38,8 +39,31 @@ namespace PhotoCat2.ViewModels
         public enum State
         {
             NotLoaded,
+            Loading,
             Loaded,
+            Decoding,
             Decoded,
+        }
+
+        void SetState(State s)
+        {
+            lock (this)
+            {
+                ImageState = s;
+            }
+        }
+
+        bool TransitState(State current, State next)
+        {
+            lock (this)
+            {
+                if (current == ImageState)
+                {
+                    ImageState = next;
+                    return true;
+                }
+                return false;
+            }
         }
 
         public ImageModel(string path)
@@ -57,29 +81,44 @@ namespace PhotoCat2.ViewModels
         {
 
             Debug.WriteLine("Open!");
-
             LoadStarted?.Invoke();
 
-            var bitmap = await _OpenImage(true);
-
-            OpenRequested?.Invoke(bitmap);
+            if (TransitState(State.NotLoaded, State.Loading))
+            {
+                Bitmap = await _OpenImage(true);
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Bitmap)));
+            }
+            else if (TransitState(State.Loaded, State.Loading))
+            {
+                Bitmap = await _OpenImage(true);
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Bitmap)));
+            }
+            else
+            {
+                Debug.WriteLine("Not to open. in " + ImageState);
+            }
+            OpenRequested?.Invoke(Bitmap);
             LoadFinished?.Invoke(this);
+            TransitState(State.Loading, State.Decoded);
         }
 
-        public async void StartPrefetch()
+        public void Clear()
         {
-            var _bitmap = await _OpenImage(false);
-            PrefetchFinished?.Invoke(this);
+            Debug.WriteLine("Clear:" + FullPath);
+            lock (this)
+            {
+                ImageState = State.NotLoaded;
+                LoadedPath = "";
+                Bitmap = null;
+                PreLoadData = null;
+            }
         }
 
-        /// <summary>
-        /// Load data to memory sync
-        /// </summary>
-        public bool Load()
+        public async Task<bool> Load(CancellationToken ct)
         {
             Debug.WriteLine("Load requested: " + FullPath);
 
-            if (!PrefetchRequired())
+            if (!TransitState(State.NotLoaded, State.Loading))
             {
                 return false;
             }
@@ -89,61 +128,85 @@ namespace PhotoCat2.ViewModels
 
             try
             {
-                PreLoadData = LoadData();
+                PreLoadData = await LoadDataAsync(ct);
             }
             catch (IOException e)
             {
                 Debug.WriteLine("Caught IOException: " + e.Message);
+                TransitState(State.Loading, State.NotLoaded);
                 return false;
             }
 
-            ImageState = State.Loaded;
             Debug.WriteLine("Loaded in " + sw.ElapsedMilliseconds + "ms. " + FullPath);
+            TransitState(State.Loading, State.Loaded);
             return true;
         }
 
         public void Decode()
         {
             Debug.WriteLine("Decode requested: " + FullPath);
-            if (ImageState != State.Loaded) { return; }
+            if (!TransitState(State.Loaded, State.Decoding))
+            {
+                Debug.WriteLine("Maybe to load : " + FullPath);
+                PrefetchFinished?.Invoke(this);
+
+                TransitState(State.Decoding, State.NotLoaded);
+                return;
+            }
+
+            if (PreLoadData == null)
+            {
+                Debug.WriteLine("Maybe to load : " + FullPath);
+                PrefetchFinished?.Invoke(this);
+
+                TransitState(State.Decoding, State.NotLoaded);
+                return;
+            }
 
             var sw = new Stopwatch();
             sw.Start();
 
             Bitmap = DecodeImage(PreLoadData);
 
-            LoadedPath = FullPath;
-            ImageState = State.Decoded;
-            Debug.WriteLine("Decoded in " + sw.ElapsedMilliseconds + "ms : " + FullPath);
 
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Bitmap)));
+            if (Bitmap == null)
+            {
+                // failed to load.
+                Debug.WriteLine("Failed to decode in " + sw.ElapsedMilliseconds + "ms : " + FullPath);
+                PrefetchFinished?.Invoke(this);
+                TransitState(State.Decoding, State.NotLoaded);
+            }
+            else
+            {
+                LoadedPath = FullPath;
+                Debug.WriteLine("Decoded in " + sw.ElapsedMilliseconds + "ms : " + FullPath);
 
-            PrefetchFinished?.Invoke(this);
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Bitmap)));
+                PrefetchFinished?.Invoke(this);
+
+                TransitState(State.Decoding, State.Decoded);
+            }
+
 
             // todo: Free memorystream after decode finished.
         }
 
         private async Task<BitmapImage> _OpenImage(bool is_async)
         {
-            if (!PrefetchRequired())
-            {
-                return Bitmap;
-            }
-
             Debug.WriteLine("Start Loading: " + FullPath);
-
+            BitmapImage bmp = null;
             try
             {
                 if (is_async)
                 {
-                    Bitmap = await Task.Run(() =>
+                    bmp = await Task.Run(() =>
                     {
-                        return LoadBitmap();
+                        return LoadAndDecode();
                     });
                 }
                 else
                 {
-                    Bitmap = LoadBitmap();
+                    bmp = LoadAndDecode();
                 }
             }
             catch (IOException e)
@@ -156,12 +219,11 @@ namespace PhotoCat2.ViewModels
             ImageState = State.Decoded;
             Debug.WriteLine("Loaded&Decoded: " + FullPath);
 
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Bitmap)));
 
-            return Bitmap;
+            return bmp;
         }
 
-        private BitmapImage LoadBitmap()
+        private BitmapImage LoadAndDecode()
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -208,9 +270,15 @@ namespace PhotoCat2.ViewModels
             return ms;
         }
 
-        public bool PrefetchRequired()
+        async Task<MemoryStream> LoadDataAsync(CancellationToken ct)
         {
-            return LoadedPath != FullPath || ImageState == State.NotLoaded;
+            var ms = new MemoryStream();
+            using (var fs = new FileStream(FullPath, FileMode.Open))
+            {
+                await fs.CopyToAsync(ms, 1024 * 1024, ct);
+                ms.Seek(0, SeekOrigin.Begin);
+            }
+            return ms;
         }
     }
 }
