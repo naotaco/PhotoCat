@@ -28,8 +28,6 @@ jobs:
       App_Packages_Directory: PhotoCat2
       Solution_Path: PhotoCat2.sln
       Wpf_Project_Path: PhotoCat2\PhotoCat2.csproj
-      Wap_Project_Directory: MyWpfApp.Package
-      Wap_Project_Name: MyWpfApp.Package.wapproj
 
     steps:
     - name: Checkout
@@ -88,4 +86,4 @@ jobs:
       uses: actions/upload-artifact@v1
       with:
         name: MSIX Package
-        path: ${{ env.Wap_Project_Directory }}\${{ env.App_Packages_Directory }}
+        path: ${{ env.App_Packages_Directory }}\bin\Release
