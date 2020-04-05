@@ -74,6 +74,8 @@ jobs:
         path: ${{ env.App_Packages_Directory }}\bin\Release
 
   release:
+    name: Create and publish bianry
+    needs: build
     runs-on: ubuntu-latest
     steps:
     - name: Download artifacts
