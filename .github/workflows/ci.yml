@@ -76,9 +76,9 @@ jobs:
       uses: montudor/action-zip@v0.1.0
       with:
         args: zip -qq -r $env.ZipPath $env.TargetDir
-        env:
-          ZipPath: "PhotoCat-Release_${{ github.ref }}.zip"
-          TargetDir: ${{ env.App_Packages_Directory }}\bin\Release
+      env:
+        ZipPath: "PhotoCat-Release_${{ github.ref }}.zip"
+        TargetDir: ${{ env.App_Packages_Directory }}\bin\Release
     - name: Upload zip file
       uses: actions/upload-artifact@master
       with:
