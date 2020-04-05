@@ -21,7 +21,35 @@ namespace PhotoCat2.ViewModels
         CancellationTokenSource LoadCancellationTokenSource = null;
         CancellationTokenSource DecodeCancellationTokenSource = null;
 
-        public int PreFetchNum { get; set; } = 10;
+        public int PreFetchNum { get; set; } = 7;
+
+        private int _SelectedIndex = 0;
+        public int SelectedIndex
+        {
+            get { return _SelectedIndex; }
+            set
+            {
+                if (_SelectedIndex != value)
+                {
+                    Debug.WriteLine("SelectedIndex: " + value);
+                    _SelectedIndex = value;
+                }
+            }
+        }
+
+        int _DisplayedIndex = 0;
+        public int DisplayedIndex
+        {
+            get { return _DisplayedIndex; }
+            set
+            {
+                if (_DisplayedIndex != value)
+                {
+                    Debug.WriteLine("Displayedindex: " + value);
+                    _DisplayedIndex = value;
+                }
+            }
+        }
 
         private int _TotalImages = 0;
         public int TotalImages
@@ -102,16 +130,18 @@ namespace PhotoCat2.ViewModels
 
         public void ItemSelected(ImageModel selected)
         {
+            SelectedIndex = Items.IndexOf(selected);
             CancelPrefetchOperations();
         }
 
-        public void PrefetchImages(ImageModel loadedMainImage)
+        public void ItemLoaded(ImageModel loadedMainImage)
         {
             var currentIndex = Items.IndexOf(loadedMainImage);
+            DisplayedIndex = currentIndex;
             var frontStartIndex = currentIndex + 1;
             var frontNum = Math.Min(Items.Count - frontStartIndex, PreFetchNum);
 
-            var backNum = Math.Min(currentIndex, PreFetchNum / 3);
+            var backNum = Math.Min(currentIndex, PreFetchNum);
             var backStartIndex = Math.Max(0, currentIndex - backNum);
 
             TotalImages = frontNum;
@@ -213,5 +243,15 @@ namespace PhotoCat2.ViewModels
         {
             Items.Add(item);
         }
+
+        public int NavigateRelative(int shift)
+        {
+            if (Items.Count == 0) { return 0; }
+
+            var newIndex = Math.Max(0, Math.Min((SelectedIndex + shift), Items.Count - 1));
+            Items[newIndex].OpenImage();
+            return newIndex;
+        }
+            
     }
 }

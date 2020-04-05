@@ -77,7 +77,7 @@ namespace PhotoCat2.ViewModels
             Date = created.ToString();
         }
 
-        async void OpenImage()
+        public async void OpenImage()
         {
 
             Debug.WriteLine("Open!");
@@ -186,7 +186,20 @@ namespace PhotoCat2.ViewModels
             var sw = new Stopwatch();
             sw.Start();
 
-            Bitmap = DecodeImage(PreLoadData);
+            try
+            {
+                Bitmap = DecodeImage(PreLoadData);
+            }
+            catch (NotSupportedException e)
+            {
+                Debug.WriteLine("Caught NotSupportedException on opening image. " + e.Message);
+                Bitmap = null;
+            }
+            catch (FileFormatException e)
+            {
+                Debug.WriteLine("Caught FileFormatException on opening image. " + e.Message);
+                Bitmap = null;
+            }
 
             if (Bitmap == null)
             {
@@ -206,8 +219,8 @@ namespace PhotoCat2.ViewModels
                 TransitState(State.Decoding, State.Decoded);
             }
 
-            PreLoadData?.Dispose();
-            PreLoadData = null;
+            //PreLoadData?.Dispose();
+            //PreLoadData = null;
             // todo: Free memorystream after decode finished.
         }
 
@@ -234,6 +247,17 @@ namespace PhotoCat2.ViewModels
                 Debug.WriteLine("Caught IOExeption on opening image. " + e.Message);
                 return null;
             }
+            catch (NotSupportedException e)
+            {
+                Debug.WriteLine("Caught NotSupportedException on opening image. " + e.Message);
+                return null;
+            }
+            catch (FileFormatException e)
+            {
+                Debug.WriteLine("Caught FileFormatException on opening image. " + e.Message);
+                Bitmap = null;
+            }
+
 
             LoadedPath = FullPath;
             ImageState = State.Decoded;

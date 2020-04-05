@@ -14,7 +14,7 @@
         TextElement.FontSize="13"
         TextOptions.TextFormattingMode="Ideal" 
         TextOptions.TextRenderingMode="Auto"    
-        
+        KeyDown="Window_KeyDown"
         Background="{DynamicResource MaterialDesignPaper}"
         FontFamily="{DynamicResource MaterialDesignFont}">
 
@@ -32,7 +32,7 @@
             <ColumnDefinition Width="450"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
-        <ScrollViewer Grid.Column="0" PreviewMouseWheel="ScrollViewer_PreviewMouseWheel">
+        <ScrollViewer Grid.Column="0" PreviewMouseWheel="ScrollViewer_PreviewMouseWheel" x:Name="ThumbsScrollView">
             <ListView ItemsSource="{Binding Items}"   
                       ScrollViewer.CanContentScroll="True"
                       ScrollViewer.HorizontalScrollBarVisibility="Disabled"
@@ -41,6 +41,7 @@
                       ScrollViewer.VerticalScrollBarVisibility="Visible"
                       VirtualizingPanel.IsVirtualizing="False"
                       VirtualizingPanel.VirtualizationMode="Recycling"
+                      x:Name="ThumbsListView"
                       >
 
                 <ListView.ItemTemplate>

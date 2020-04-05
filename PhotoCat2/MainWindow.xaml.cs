@@ -191,7 +191,7 @@ namespace PhotoCat2
                             Dispatcher.BeginInvoke(new ThreadStart(delegate
                             {
                                 MainImageProgress.Visibility = Visibility.Collapsed;
-                                GetVM().PrefetchImages(loaded);
+                                GetVM().ItemLoaded(loaded);
 
                             }), System.Windows.Threading.DispatcherPriority.Background);
 
@@ -335,6 +335,44 @@ namespace PhotoCat2
             FitImage();
         }
 
+        private void Window_KeyDown(object sender, KeyEventArgs e)
+        {
+            int shift = 0;
+            switch (e.Key)
+            {
+                case Key.W:
+                case Key.A:
+                case Key.Left:
+                case Key.Down:
+                    shift = -1;
+                    break;
+                case Key.D:
+                case Key.S:
+                case Key.Right:
+                case Key.Up:
+                    shift = 1;
+                    break;
 
+            }
+
+            if (shift != 0)
+            {
+                var newIndex = GetVM().NavigateRelative(shift);
+
+                var height = ThumbsScrollView.ScrollableHeight;
+
+                if (height < 1) { return; }
+
+                var selectedImageContainer = (UIElement)ThumbsListView.ItemContainerGenerator.ContainerFromIndex(newIndex);
+
+                var offsetList = VisualTreeHelper.GetOffset(ThumbsScrollView);
+                var offsetItem = VisualTreeHelper.GetOffset(selectedImageContainer);
+
+                var newX = (offsetItem.Y - offsetList.Y) - ThumbsScrollView.ActualHeight / 2 + 50; // todo: get "50" dynamically
+
+                ThumbsScrollView.ScrollToVerticalOffset(newX);
+
+            }
+        }
     }
 }
