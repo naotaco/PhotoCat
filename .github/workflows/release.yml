@@ -3,7 +3,7 @@
 
 # This continuous integration pipeline is triggered anytime a user pushes code to the repo.
 # This pipeline builds the Wpf project, runs unit tests, then saves the MSIX build artifact.
-name:  Build and save files as arifacts
+name:  Create release and upload artifacts as assets
 
 # Trigger on every master branch push and pull request
 on:
@@ -12,10 +12,6 @@ on:
       - master
     tags:        
       - v*
-  pull_request:
-    branches:
-      - master
-
 
 jobs:
 
@@ -75,3 +71,37 @@ jobs:
       with:
         name: PhotoCat2ReleaseBinary
         path: ${{ env.App_Packages_Directory }}\bin\Release
+
+  release:
+    name: Create and publish bianry
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - name: Download artifacts
+      uses: actions/download-artifact@v1
+      with: 
+        name: PhotoCat2ReleaseBinary
+    - name: Create release zip archive
+      uses: montudor/action-zip@v0.1.0
+      with:
+        args: zip -qq -r PhotoCat-Release_${{ github.sha }}.zip PhotoCat2ReleaseBinary
+    - name: Create Release
+      id: create_release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        draft: false
+        prerelease: true
+    - name: Upload Release Asset
+      id: upload-release-asset 
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+        asset_path: ./PhotoCat-Release_${{ github.sha }}.zip
+        asset_name: PhotoCat-Release_${{ github.sha }}.zip
+        asset_content_type: application/zip
