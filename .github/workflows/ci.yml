@@ -58,16 +58,6 @@ jobs:
         Configuration: Release
         RuntimeIdentifier: win-${{ matrix.targetplatform }}
 
-
-    # Build the Windows Application Packaging project
-    # - name: Build the Windows Application Packaging Project
-    #   run: msbuild $env:Solution_Path /p:Platform=$env:TargetPlatform /p:Configuration=$env:Configuration /p:UapAppxPackageBuildMode=$env:BuildMode /p:AppxBundle=$env:AppxBundle /p:PackageCertificateKeyFile=$env:SigningCertificate /p:PackageCertificatePassword=${{ secrets.Pfx_Key }}
-    #   env:
-    #     AppxBundle: Never
-    #     BuildMode: SideloadOnly
-    #     Configuration: Release
-    #     TargetPlatform: Any CPU
-
     - name: Restore NuGet packages
       uses: warrenbuckley/Setup-Nuget@v1
 
@@ -82,3 +72,16 @@ jobs:
       with:
         name: PhotoCat2 Release binary
         path: ${{ env.App_Packages_Directory }}\bin\Release
+    - name: Create release zip archive
+      uses: montudor/action-zip@v0.1.0
+      with:
+        args: zip -qq -r $env.ZipPath $env.TargetDir
+        env:
+          ZipPath: "PhotoCat-Release_${{ github.ref }}.zip"
+          TargetDir: ${{ env.App_Packages_Directory }}\bin\Release
+    - name: Upload zip file
+      uses: actions/upload-artifact@master
+      with:
+        name: PhotoCat2 executable
+        path: "PhotoCat-Release_${{ github.ref }}.zip"
+
