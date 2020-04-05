@@ -78,8 +78,8 @@ jobs:
     steps:
     - name: Download artifacts
       uses: actions/download-artifact@v1
-        with:
-          name: PhotoCat2ReleaseBinary
+      with: 
+        name: PhotoCat2ReleaseBinary
     - name: Create release zip archive
       uses: montudor/action-zip@v0.1.0
       with:
