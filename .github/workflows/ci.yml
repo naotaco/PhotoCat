@@ -70,15 +70,23 @@ jobs:
     - name: Upload build artifacts
       uses: actions/upload-artifact@v1
       with:
-        name: PhotoCat2 Release binary
+        name: PhotoCat2ReleaseBinary
         path: ${{ env.App_Packages_Directory }}\bin\Release
+
+  release:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Download artifacts
+      uses: actions/download-artifact@v1
+        with:
+          name: PhotoCat2ReleaseBinary
     - name: Create release zip archive
       uses: montudor/action-zip@v0.1.0
       with:
         args: zip -qq -r $env.ZipPath $env.TargetDir
       env:
         ZipPath: "PhotoCat-Release_${{ github.ref }}.zip"
-        TargetDir: ${{ env.App_Packages_Directory }}\bin\Release
+        TargetDir: PhotoCat2ReleaseBinary
     - name: Upload zip file
       uses: actions/upload-artifact@master
       with:
