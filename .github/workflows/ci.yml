@@ -85,10 +85,7 @@ jobs:
     - name: Create release zip archive
       uses: montudor/action-zip@v0.1.0
       with:
-        args: zip -qq -r $env.ZipPath $env.TargetDir
-      env:
-        ZipPath: "PhotoCat-Release_${{ github.ref }}.zip"
-        TargetDir: PhotoCat2ReleaseBinary
+        args: zip -qq -r PhotoCat-Release_${{ github.ref }}.zip PhotoCat2ReleaseBinary
     - name: Upload zip file
       uses: actions/upload-artifact@master
       with:
