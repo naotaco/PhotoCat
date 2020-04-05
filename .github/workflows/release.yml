@@ -8,8 +8,6 @@ name:  Create release and upload artifacts as assets
 # Trigger on every master branch push and pull request
 on:
   push:
-    branches:
-      - master
     tags:        
       - v*
 
