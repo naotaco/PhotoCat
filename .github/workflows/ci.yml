@@ -68,7 +68,7 @@ jobs:
 
     - uses: warrenbuckley/Setup-MSBuild@v1
 
-    - run: msbuild ${{ env.Wpf_Project_Path }} -p:Configuration=Release  -p:Platform=x64
+    - run: msbuild ${{ env.Wpf_Project_Path }} -p:Configuration=Release
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v1
