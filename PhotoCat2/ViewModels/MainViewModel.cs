@@ -156,11 +156,11 @@ namespace PhotoCat2.ViewModels
 
 
             DisplayedIndex = currentIndex;
-            var frontStartIndex = currentIndex + 1;
+            var frontStartIndex = currentIndex;
             var frontNum = Math.Min(Items.Count - frontStartIndex, PreFetchNum);
 
             var backNum = Math.Min(currentIndex, PreFetchNum);
-            var backStartIndex = Math.Max(0, currentIndex - backNum);
+            var backStartIndex = Math.Max(0, currentIndex - backNum - 1);
 
             TotalImages = frontNum;
             LoadedImagesCount = 0;
