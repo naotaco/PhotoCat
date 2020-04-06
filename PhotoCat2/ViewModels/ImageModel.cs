@@ -62,6 +62,7 @@ namespace PhotoCat2.ViewModels
                     ImageState = next;
                     return true;
                 }
+                Debug.WriteLine(string.Format("Wrong transition from {0} to {1} (current: {3}) : {2} ", current, next, FullPath, ImageState));
                 return false;
             }
         }
@@ -136,11 +137,12 @@ namespace PhotoCat2.ViewModels
 
         public async Task<bool> Load(CancellationToken ct)
         {
+            if (ImageState != State.NotLoaded) { return true; }
             Debug.WriteLine("Load requested: " + FullPath);
 
             if (!TransitState(State.NotLoaded, State.Loading))
             {
-                return false;
+                return true;
             }
 
             var sw = new Stopwatch();
@@ -157,6 +159,14 @@ namespace PhotoCat2.ViewModels
                 return false;
             }
 
+            if (PreLoadData == null || PreLoadData.Length < 2)
+            {
+                PreLoadData = null;
+                Debug.WriteLine("Something wrong: failed to load.");
+                TransitState(State.Loading, State.NotLoaded);
+                return false;
+            }
+
             Debug.WriteLine("Loaded in " + sw.ElapsedMilliseconds + "ms. " + FullPath);
             TransitState(State.Loading, State.Loaded);
             return true;
@@ -164,6 +174,8 @@ namespace PhotoCat2.ViewModels
 
         public void Decode()
         {
+            if (ImageState != State.Loaded) { return; }
+
             Debug.WriteLine("Decode requested: " + FullPath);
             if (!TransitState(State.Loaded, State.Decoding))
             {
@@ -317,10 +329,18 @@ namespace PhotoCat2.ViewModels
         async Task<MemoryStream> LoadDataAsync(CancellationToken ct)
         {
             var ms = new MemoryStream();
+            var length = new FileInfo(FullPath).Length;
             using (var fs = new FileStream(FullPath, FileMode.Open))
             {
                 await fs.CopyToAsync(ms, 1024 * 1024, ct);
                 ms.Seek(0, SeekOrigin.Begin);
+            }
+
+            if (length != ms.Length)
+            {
+                Debug.WriteLine("Size unmatched. " + length + " " + ms.Length);
+                ms.Dispose();
+                return null;
             }
             return ms;
         }

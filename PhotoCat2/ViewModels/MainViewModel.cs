@@ -178,29 +178,37 @@ namespace PhotoCat2.ViewModels
         async void StartPrefetch(List<ImageModel> items)
         {
             // todo: Accept cancel operation using CancellationToken.
-
             foreach (var item in items)
             {
 
                 // Load sequentially.
-                LoadCancellationTokenSource = new CancellationTokenSource();
-                LoadCancellationTokenSource.CancelAfter(3000);
+              
+                var RETRY_LIMIT = 3;
+                for (int i = 0; i < RETRY_LIMIT; i++)
+                {
+                    LoadCancellationTokenSource = new CancellationTokenSource();
+                    LoadCancellationTokenSource.CancelAfter(3000);
 
-                var succeed = false;
-                try
-                {
-                    succeed = await item.Load(LoadCancellationTokenSource.Token);
-                }
-                catch (TaskCanceledException e)
-                {
-                    Debug.WriteLine("Task cancelled due to timeout.");
-                    item.Clear();
-                }
-
-                if (succeed)
-                {
-                    LoadCancellationTokenSource?.Dispose();
-                    LoadCancellationTokenSource = null;
+                    var succeed = false;
+                    try
+                    {
+                        succeed = await item.Load(LoadCancellationTokenSource.Token);
+                        if (succeed)
+                        {
+                            LoadCancellationTokenSource?.Dispose();
+                            LoadCancellationTokenSource = null;
+                            break;
+                        }
+                        else
+                        {
+                            Debug.WriteLine("Failed to load. retry count {0} / {1}.", i, RETRY_LIMIT);
+                        }
+                    }
+                    catch (TaskCanceledException e)
+                    {
+                        Debug.WriteLine("Task cancelled due to timeout.");
+                        item.Clear();
+                    }
                 }
 
                 // Decode parallelly.
@@ -252,6 +260,6 @@ namespace PhotoCat2.ViewModels
             Items[newIndex].OpenImage();
             return newIndex;
         }
-            
+
     }
 }
