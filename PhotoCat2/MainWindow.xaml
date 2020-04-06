@@ -105,6 +105,5 @@
             <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Style="{DynamicResource MaterialDesignTitleTextBlock}">Drop JPG files here!</TextBlock>
         </materialDesign:Card>
         <ProgressBar IsIndeterminate="False" Minimum="0" Maximum="1.0" Value="{Binding LoadingProgress, Mode=OneWay}" VerticalAlignment="Bottom" Visibility="{Binding IsLoadingInfoVisible, Mode=OneWay}"/>
-        <ProgressBar IsIndeterminate="True" VerticalAlignment="Bottom" x:Name="MainImageProgress" Visibility="{Binding MainImageLodingProgressVisibility, Mode=OneWay}" Grid.Column="1"/>
     </Grid>
 </Window>

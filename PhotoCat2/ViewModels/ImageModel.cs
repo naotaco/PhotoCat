@@ -23,7 +23,7 @@ namespace PhotoCat2.ViewModels
         public ICommand OpenCommand { get; set; }
         public ICommand LoadedCommand { get; set; }
         public Action<BitmapImage> OpenedAsMainImage = null;
-        public Action<ImageModel> LoadStarted = null;
+        public Action<ImageModel> ItemSelected = null;
         public Action<ImageModel> LoadFinished = null;
         public Action<ImageModel> PrefetchFinished = null;
         public CancellationTokenSource DecodeCancellationTokensource { get; set; } = null;
@@ -93,40 +93,10 @@ namespace PhotoCat2.ViewModels
             Date = created.ToString();
         }
 
-        public async void OpenImage()
+        public void OpenImage()
         {
-
             Debug.WriteLine("Open!");
-            LoadStarted?.Invoke(this);
-
-            if (TransitState(State.NotLoaded, State.Loading))
-            {
-                Bitmap = await _OpenImage(true);
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Bitmap)));
-            }
-            else if (TransitState(State.Loaded, State.Loading))
-            {
-                Bitmap = await _OpenImage(true);
-                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Bitmap)));
-            }
-            else if (TransitState(State.Decoded, State.Loading))
-            {
-                // In case it's already decoded state, check image data.
-                if (Bitmap == null || Bitmap.PixelWidth < 2 || Bitmap.PixelHeight < 2)
-                {
-                    // Maybe previous loading failed.
-                    Debug.WriteLine("Reload image: " + FullPath);
-                    Bitmap = await _OpenImage(true);
-                    PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Bitmap)));
-                }
-                else
-                {
-                    Debug.WriteLine("Not to open. in " + ImageState);
-                }
-            }
-            OpenedAsMainImage?.Invoke(Bitmap);
-            LoadFinished?.Invoke(this);
-            TransitState(State.Loading, State.Decoded);
+            ItemSelected?.Invoke(this);
         }
 
         public void Clear()
@@ -256,6 +226,11 @@ namespace PhotoCat2.ViewModels
             //PreLoadData?.Dispose();
             //PreLoadData = null;
             // todo: Free memorystream after decode finished.
+        }
+
+        public bool IsDisplayable
+        {
+            get { return ImageState == State.Decoded; }
         }
 
         private async Task<BitmapImage> _OpenImage(bool is_async)

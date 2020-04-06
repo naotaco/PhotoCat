@@ -114,25 +114,6 @@ namespace PhotoCat2.ViewModels
             }
         }
 
-        bool _IsMainImageLoding = false;
-        public bool IsMainImageLoding
-        {
-            get { return _IsMainImageLoding; }
-            set
-            {
-                if (_IsMainImageLoding != value)
-                {
-                    _IsMainImageLoding = value;
-                    Notify(nameof(IsMainImageLoding));
-                    Notify(nameof(MainImageLodingProgressVisibility));
-                }
-            }
-        }
-        public Visibility MainImageLodingProgressVisibility
-        {
-            get { return IsMainImageLoding ? Visibility.Visible : Visibility.Collapsed; }
-        }
-
         public MainViewModel()
         {
             Items.CollectionChanged += Items_CollectionChanged;
@@ -153,9 +134,23 @@ namespace PhotoCat2.ViewModels
         public void ItemSelected(ImageModel selected)
         {
             SelectedIndex = Items.IndexOf(selected);
+
+            if (selected.IsDisplayable)
+            {
+                MainImageSource = selected.Bitmap;
+                Notify(nameof(MainImageSource));
+                MainImageUpdated?.Invoke(selected.Bitmap);
+            }
+            else
+            {
+                // not to trigger binding. keep displayed, clear internal flag.
+                MainImageSource = null;
+            }
+
+            LoadNeighborImages(selected);
         }
 
-        public void ItemLoaded(ImageModel loadedMainImage)
+        void LoadNeighborImages(ImageModel loadedMainImage)
         {
             var currentIndex = Items.IndexOf(loadedMainImage);
 
@@ -295,21 +290,9 @@ namespace PhotoCat2.ViewModels
         {
             var m = new ImageModel(fullPath)
             {
-                OpenedAsMainImage = (bmp) =>
+                ItemSelected = (selected) =>
                 {
-                    MainImageSource = bmp;
-                    Notify(nameof(MainImageSource));
-                    MainImageUpdated?.Invoke(bmp);
-                },
-                LoadStarted = (selected) =>
-                {
-                    IsMainImageLoding = true;
                     ItemSelected(selected);
-                },
-                LoadFinished = (loaded) =>
-                {
-                    IsMainImageLoding = false;
-                    ItemLoaded(loaded);
                 },
 
                 PrefetchFinished = (loaded) =>

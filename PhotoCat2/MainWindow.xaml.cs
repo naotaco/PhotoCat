@@ -87,53 +87,6 @@ namespace PhotoCat2
             }
         }
 
-        async Task<long> LoadSingleImage(string path, Image img)
-        {
-            var loadSw = new Stopwatch();
-            loadSw.Start();
-
-            return await Task.Run(() =>
-            {
-                var bmp = new BitmapImage()
-                {
-                };
-                var ms = new MemoryStream();
-                using (var fs = new FileStream(path, FileMode.Open))
-                {
-                    fs.CopyTo(ms);
-                    ms.Seek(0, SeekOrigin.Begin);
-                }
-
-                bmp.BeginInit();
-                bmp.StreamSource = ms;
-                bmp.DecodePixelHeight = bmp.PixelHeight;
-                bmp.DecodePixelWidth = bmp.PixelWidth;
-                bmp.EndInit();
-                bmp.Freeze();
-
-                Debug.WriteLine("Init in ms: " + loadSw.ElapsedMilliseconds);
-
-                Dispatcher.BeginInvoke(new ThreadStart(delegate
-                {
-                    img.Source = bmp;
-                    img.Unloaded += delegate
-                    {
-                        ms.Close();
-                        ms.Dispose();
-                    };
-                    img.Loaded += (e0, e1) =>
-                    {
-                        MainImageProgress.Visibility = Visibility.Collapsed;
-                        Debug.WriteLine("Loaded in ms: " + loadSw.ElapsedMilliseconds);
-                    };
-
-
-
-                }));
-                return loadSw.ElapsedMilliseconds;
-            });
-        }
-
         async void LoadFileList(string dir)
         {
             var loadSw = new Stopwatch();
