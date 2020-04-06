@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
@@ -21,10 +22,26 @@ namespace PhotoCat2.ViewModels
 
         public ICommand OpenCommand { get; set; }
         public ICommand LoadedCommand { get; set; }
-        public Action<BitmapImage> OpenRequested = null;
+        public Action<BitmapImage> OpenedAsMainImage = null;
         public Action<ImageModel> LoadStarted = null;
         public Action<ImageModel> LoadFinished = null;
         public Action<ImageModel> PrefetchFinished = null;
+        public CancellationTokenSource DecodeCancellationTokensource { get; set; } = null;
+
+        public Visibility LoadingProgressVisibility
+        {
+            get
+            {
+                switch (ImageState)
+                {
+                    case State.Loading:
+                    case State.Decoding:
+                        return Visibility.Visible;
+                    default:
+                        return Visibility.Collapsed;
+                }
+            }
+        }
 
         public string FullPath { get; }
         string LoadedPath = "";
@@ -45,12 +62,9 @@ namespace PhotoCat2.ViewModels
             Decoded,
         }
 
-        void SetState(State s)
+        void Notify(string name)
         {
-            lock (this)
-            {
-                ImageState = s;
-            }
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
         }
 
         bool TransitState(State current, State next)
@@ -60,6 +74,7 @@ namespace PhotoCat2.ViewModels
                 if (current == ImageState)
                 {
                     ImageState = next;
+                    Notify(nameof(LoadingProgressVisibility));
                     return true;
                 }
                 Debug.WriteLine(string.Format("Wrong transition from {0} to {1} (current: {3}) : {2} ", current, next, FullPath, ImageState));
@@ -109,7 +124,7 @@ namespace PhotoCat2.ViewModels
                     Debug.WriteLine("Not to open. in " + ImageState);
                 }
             }
-            OpenRequested?.Invoke(Bitmap);
+            OpenedAsMainImage?.Invoke(Bitmap);
             LoadFinished?.Invoke(this);
             TransitState(State.Loading, State.Decoded);
         }
@@ -130,9 +145,11 @@ namespace PhotoCat2.ViewModels
                 Bitmap = null;
                 PreLoadData?.Dispose();
                 PreLoadData = null;
+                DecodeCancellationTokensource = null;
             }
 
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(Bitmap)));
+            Notify(nameof(Bitmap));
+            Notify(nameof(LoadingProgressVisibility));
         }
 
         public async Task<bool> Load(CancellationToken ct)
@@ -170,6 +187,11 @@ namespace PhotoCat2.ViewModels
             Debug.WriteLine("Loaded in " + sw.ElapsedMilliseconds + "ms. " + FullPath);
             TransitState(State.Loading, State.Loaded);
             return true;
+        }
+
+        public bool IsDecotable()
+        {
+            return ImageState == State.Loaded;
         }
 
         public void Decode()

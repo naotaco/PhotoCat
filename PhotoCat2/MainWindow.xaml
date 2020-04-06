@@ -58,7 +58,8 @@
                                         <ColumnDefinition Width="Auto" />
                                         <ColumnDefinition />
                                     </Grid.ColumnDefinitions>
-                                    <Image Width="108" Height="72" RenderSize="300 200" Source="{Binding Bitmap, Mode=OneWay}"
+                                    <Image Width="108" Height="72" RenderSize="300 200" Source="{Binding Bitmap, Mode=OneWay, IsAsync=True}"
+                                           
                                        RenderOptions.BitmapScalingMode="LowQuality">
                                         <i:Interaction.Triggers>
                                             <i:EventTrigger EventName="Loaded">
@@ -66,9 +67,12 @@
                                             </i:EventTrigger>
                                         </i:Interaction.Triggers>
                                     </Image>
+                                    <ProgressBar Style="{StaticResource MaterialDesignCircularProgressBar}"
+                                                 IsIndeterminate="True"
+                                                 Visibility="{Binding LoadingProgressVisibility, Mode=OneWay}"/>
                                     <StackPanel Margin="8 0" Grid.Column="1" VerticalAlignment="Center">
-                                        <TextBlock Margin="4" Text="{Binding Title, Mode=OneWay}"/>
-                                        <TextBlock Margin="4" Text="{Binding Date, Mode=OneWay}" />
+                                        <TextBlock Margin="4" Text="{Binding Title, Mode=OneWay, IsAsync=True}"/>
+                                        <TextBlock Margin="4" Text="{Binding Date, Mode=OneWay, IsAsync=True}" />
 
                                     </StackPanel>
                                 </Grid>
@@ -93,6 +97,7 @@
                    SnapsToDevicePixels="True"
                    Stretch="Uniform"
                    ClipToBounds="False"
+                   Source="{Binding MainImageSource, Mode=OneWay}"
                    />
         </Grid>
 
@@ -100,6 +105,6 @@
             <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" Style="{DynamicResource MaterialDesignTitleTextBlock}">Drop JPG files here!</TextBlock>
         </materialDesign:Card>
         <ProgressBar IsIndeterminate="False" Minimum="0" Maximum="1.0" Value="{Binding LoadingProgress, Mode=OneWay}" VerticalAlignment="Bottom" Visibility="{Binding IsLoadingInfoVisible, Mode=OneWay}"/>
-        <ProgressBar IsIndeterminate="True" VerticalAlignment="Bottom" x:Name="MainImageProgress" Visibility="Collapsed" Grid.Column="1"/>
+        <ProgressBar IsIndeterminate="True" VerticalAlignment="Bottom" x:Name="MainImageProgress" Visibility="{Binding MainImageLodingProgressVisibility, Mode=OneWay}" Grid.Column="1"/>
     </Grid>
 </Window>

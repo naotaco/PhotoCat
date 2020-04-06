@@ -151,6 +151,7 @@ namespace PhotoCat2
                         fs.Add(f.FullName);
                     }
                 }
+                fs.Sort();
                 return fs;
             });
             Debug.WriteLine("File list loaded in ms: " + loadSw.ElapsedMilliseconds);
@@ -163,50 +164,12 @@ namespace PhotoCat2
                 GetVM().LoadedImagesCount = 0;
             }));
 
-
             foreach (var f in files)
             {
                 await Dispatcher.BeginInvoke(new ThreadStart(delegate
                 {
-                    GetVM().AddItem(new ImageModel(f)
-                    {
-                        OpenRequested = (bmp) =>
-                        {
-                            Dispatcher.BeginInvoke(new ThreadStart(delegate
-                            {
-                                MainImage.Source = bmp;
-                                FitImage();
-                            }));
-                        },
-                        LoadStarted = (selected) =>
-                        {
-                            Dispatcher.BeginInvoke(new ThreadStart(delegate
-                            {
-                                MainImageProgress.Visibility = Visibility.Visible;
-                                GetVM().ItemSelected(selected);
-                            }), System.Windows.Threading.DispatcherPriority.Background);
-                        },
-                        LoadFinished = (loaded) =>
-                        {
-                            Dispatcher.BeginInvoke(new ThreadStart(delegate
-                            {
-                                MainImageProgress.Visibility = Visibility.Collapsed;
-                                GetVM().ItemLoaded(loaded);
-
-                            }), System.Windows.Threading.DispatcherPriority.Background);
-
-                        },
-                        PrefetchFinished = (loaded) =>
-                        {
-                            Dispatcher.BeginInvoke(new ThreadStart(delegate
-                            {
-                                GetVM().ItemPrefetchCompleted(loaded);
-                            }), System.Windows.Threading.DispatcherPriority.Background);
-                        },
-                    });
-
+                    GetVM().AddItem(f);
                 }), System.Windows.Threading.DispatcherPriority.ApplicationIdle, null);
-
             }
             Debug.WriteLine("File list items added in ms: " + loadSw.ElapsedMilliseconds);
 

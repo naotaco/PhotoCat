@@ -9,6 +9,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
 namespace PhotoCat2.ViewModels
@@ -17,9 +18,11 @@ namespace PhotoCat2.ViewModels
     public class MainViewModel : INotifyPropertyChanged
     {
         public ObservableCollection<ImageModel> Items { get; } = new ObservableCollection<ImageModel>();
+        public BitmapImage MainImageSource { get; set; } = null;
+
+        public Action<BitmapImage> MainImageUpdated = null;
 
         CancellationTokenSource LoadCancellationTokenSource = null;
-        CancellationTokenSource DecodeCancellationTokenSource = null;
 
         public int PreFetchNum { get; set; } = 7;
 
@@ -111,6 +114,25 @@ namespace PhotoCat2.ViewModels
             }
         }
 
+        bool _IsMainImageLoding = false;
+        public bool IsMainImageLoding
+        {
+            get { return _IsMainImageLoding; }
+            set
+            {
+                if (_IsMainImageLoding != value)
+                {
+                    _IsMainImageLoding = value;
+                    Notify(nameof(IsMainImageLoding));
+                    Notify(nameof(MainImageLodingProgressVisibility));
+                }
+            }
+        }
+        public Visibility MainImageLodingProgressVisibility
+        {
+            get { return IsMainImageLoding ? Visibility.Visible : Visibility.Collapsed; }
+        }
+
         public MainViewModel()
         {
             Items.CollectionChanged += Items_CollectionChanged;
@@ -131,12 +153,13 @@ namespace PhotoCat2.ViewModels
         public void ItemSelected(ImageModel selected)
         {
             SelectedIndex = Items.IndexOf(selected);
-            CancelPrefetchOperations();
         }
 
         public void ItemLoaded(ImageModel loadedMainImage)
         {
             var currentIndex = Items.IndexOf(loadedMainImage);
+
+
             DisplayedIndex = currentIndex;
             var frontStartIndex = currentIndex + 1;
             var frontNum = Math.Min(Items.Count - frontStartIndex, PreFetchNum);
@@ -159,7 +182,6 @@ namespace PhotoCat2.ViewModels
                     loadItems.Add(Items[i]);
                 }
                 StartPrefetch(loadItems);
-
             });
 
             Task.Run(() =>
@@ -173,6 +195,14 @@ namespace PhotoCat2.ViewModels
         public void ItemPrefetchCompleted(ImageModel loaded)
         {
             LoadedImagesCount++;
+            var currentIndex = Items.IndexOf(loaded);
+
+            if (MainImageSource == null && currentIndex == SelectedIndex)
+            {
+                MainImageSource = loaded.Bitmap;
+                Notify(nameof(MainImageSource));
+                MainImageUpdated?.Invoke(loaded.Bitmap);
+            }
         }
 
         async void StartPrefetch(List<ImageModel> items)
@@ -182,21 +212,21 @@ namespace PhotoCat2.ViewModels
             {
 
                 // Load sequentially.
-              
+
                 var RETRY_LIMIT = 3;
                 for (int i = 0; i < RETRY_LIMIT; i++)
                 {
-                    LoadCancellationTokenSource = new CancellationTokenSource();
-                    LoadCancellationTokenSource.CancelAfter(3000);
+                    var cts = new CancellationTokenSource();
+                    cts.CancelAfter(3000);
 
                     var succeed = false;
                     try
                     {
-                        succeed = await item.Load(LoadCancellationTokenSource.Token);
+                        succeed = await item.Load(cts.Token);
                         if (succeed)
                         {
-                            LoadCancellationTokenSource?.Dispose();
-                            LoadCancellationTokenSource = null;
+                            cts?.Dispose();
+                            cts = null;
                             break;
                         }
                         else
@@ -212,14 +242,23 @@ namespace PhotoCat2.ViewModels
                 }
 
                 // Decode parallelly.
-                var queued = ThreadPool.QueueUserWorkItem(new WaitCallback((a) =>
+                if (item.IsDecotable())
                 {
-                    // todo: sometimes, it stuck in decoding state
-                    item.Decode();
-                }));
-                if (!queued)
-                {
-                    Debug.WriteLine("Failed to queue decoding ");
+                    lock (item)
+                    {
+                        var cts = new CancellationTokenSource();
+                        item.DecodeCancellationTokensource = cts;
+
+                        var queued = ThreadPool.QueueUserWorkItem(new WaitCallback((a) =>
+                        {
+                            // todo: sometimes, it stuck in decoding state
+                            item.Decode();
+                        }), cts.Token);
+                        if (!queued)
+                        {
+                            Debug.WriteLine("Failed to queue decoding ");
+                        }
+                    }
                 }
             }
         }
@@ -228,7 +267,12 @@ namespace PhotoCat2.ViewModels
         {
             for (int i = startIndex; i < (startIndex + num); i++)
             {
-                Items[i].Clear();
+                var item = Items[i];
+                lock (item)
+                {
+                    item.DecodeCancellationTokensource?.Cancel();
+                    item.Clear();
+                }
             }
         }
 
@@ -240,16 +284,44 @@ namespace PhotoCat2.ViewModels
                 LoadCancellationTokenSource?.Cancel();
             }
 
-            if (DecodeCancellationTokenSource != null)
-            {
-                Debug.WriteLine("Decode CTS Cancel request.");
-                DecodeCancellationTokenSource?.Cancel();
-            }
         }
 
         public void AddItem(ImageModel item)
         {
             Items.Add(item);
+        }
+
+        public void AddItem(string fullPath)
+        {
+            var m = new ImageModel(fullPath)
+            {
+                OpenedAsMainImage = (bmp) =>
+                {
+                    MainImageSource = bmp;
+                    Notify(nameof(MainImageSource));
+                    MainImageUpdated?.Invoke(bmp);
+                },
+                LoadStarted = (selected) =>
+                {
+                    IsMainImageLoding = true;
+                    ItemSelected(selected);
+                },
+                LoadFinished = (loaded) =>
+                {
+                    IsMainImageLoding = false;
+                    ItemLoaded(loaded);
+                },
+
+                PrefetchFinished = (loaded) =>
+                {
+                    Application.Current.Dispatcher.Invoke(
+                        () =>
+                        {
+                            ItemPrefetchCompleted(loaded);
+                        }, DispatcherPriority.Background);
+                },
+            };
+            Items.Add(m);
         }
 
         public int NavigateRelative(int shift)
