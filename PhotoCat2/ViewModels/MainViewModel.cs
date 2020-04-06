@@ -21,6 +21,7 @@ namespace PhotoCat2.ViewModels
         public BitmapImage MainImageSource { get; set; } = null;
 
         public Action<BitmapImage> MainImageUpdated = null;
+        public Action<int> SelectedIndexUpdated = null;
 
         CancellationTokenSource LoadCancellationTokenSource = null;
 
@@ -140,6 +141,7 @@ namespace PhotoCat2.ViewModels
                 MainImageSource = selected.Bitmap;
                 Notify(nameof(MainImageSource));
                 MainImageUpdated?.Invoke(selected.Bitmap);
+                SelectedIndexUpdated?.Invoke(SelectedIndex);
             }
             else
             {
@@ -161,9 +163,6 @@ namespace PhotoCat2.ViewModels
 
             var backNum = Math.Min(currentIndex, PreFetchNum);
             var backStartIndex = Math.Max(0, currentIndex - backNum - 1);
-
-            TotalImages = frontNum;
-            LoadedImagesCount = 0;
 
             Task.Run(() =>
             {
@@ -189,7 +188,6 @@ namespace PhotoCat2.ViewModels
 
         public void ItemPrefetchCompleted(ImageModel loaded)
         {
-            LoadedImagesCount++;
             var currentIndex = Items.IndexOf(loaded);
 
             if (MainImageSource == null && currentIndex == SelectedIndex)
@@ -197,6 +195,7 @@ namespace PhotoCat2.ViewModels
                 MainImageSource = loaded.Bitmap;
                 Notify(nameof(MainImageSource));
                 MainImageUpdated?.Invoke(loaded.Bitmap);
+                SelectedIndexUpdated?.Invoke(SelectedIndex);
             }
         }
 
@@ -229,7 +228,7 @@ namespace PhotoCat2.ViewModels
                             Debug.WriteLine("Failed to load. retry count {0} / {1}.", i, RETRY_LIMIT);
                         }
                     }
-                    catch (TaskCanceledException e)
+                    catch (TaskCanceledException)
                     {
                         Debug.WriteLine("Task cancelled due to timeout.");
                         item.Clear();
@@ -281,14 +280,21 @@ namespace PhotoCat2.ViewModels
 
         }
 
-        public void AddItem(ImageModel item)
+        public void AddItemHead(string fullPath)
         {
-            Items.Add(item);
+            ImageModel m = MakeItem(fullPath);
+            Items.Insert(0, m);
         }
 
-        public void AddItem(string fullPath)
+        public void AddItemTail(string fullPath)
         {
-            var m = new ImageModel(fullPath)
+            ImageModel m = MakeItem(fullPath);
+            Items.Add(m);
+        }
+
+        private ImageModel MakeItem(string fullPath)
+        {
+            return new ImageModel(fullPath)
             {
                 ItemSelected = (selected) =>
                 {
@@ -304,7 +310,6 @@ namespace PhotoCat2.ViewModels
                         }, DispatcherPriority.Background);
                 },
             };
-            Items.Add(m);
         }
 
         public int NavigateRelative(int shift)
@@ -314,6 +319,16 @@ namespace PhotoCat2.ViewModels
             var newIndex = Math.Max(0, Math.Min((SelectedIndex + shift), Items.Count - 1));
             Items[newIndex].OpenImage();
             return newIndex;
+        }
+
+        public void NavigateToImage(string fullPath)
+        {
+            Items.Where(im => im.FullPath == fullPath).FirstOrDefault()?.OpenImage();
+        }
+
+        public void NavigateToImage(ImageModel image)
+        {
+            image?.OpenImage();
         }
 
     }

@@ -28,7 +28,10 @@ namespace PhotoCat2
         {
             DataContext = new MainViewModel();
             InitializeComponent();
+
+            GetVM().SelectedIndexUpdated = ScrollToImage;
         }
+
 
         MainViewModel GetVM()
         {
@@ -72,7 +75,7 @@ namespace PhotoCat2
             return null;
         }
 
-        private void Grid_Drop(object sender, DragEventArgs e)
+        private async void Grid_Drop(object sender, DragEventArgs e)
         {
             var f = GetFirstOrDefaultTargetFile(e);
             if (f != null)
@@ -83,12 +86,13 @@ namespace PhotoCat2
                 // LoadSingleImage(f, MainImage);
 
                 GetVM().Items.Clear();
-                LoadFileList(System.IO.Path.GetDirectoryName(f));
+                await LoadFileList(f);
             }
         }
 
-        async void LoadFileList(string dir)
+        async Task LoadFileList(string file)
         {
+            var dir = System.IO.Path.GetDirectoryName(file);
             var loadSw = new Stopwatch();
 
             var files = await Task.Run(() =>
@@ -107,6 +111,7 @@ namespace PhotoCat2
                 fs.Sort();
                 return fs;
             });
+
             Debug.WriteLine("File list loaded in ms: " + loadSw.ElapsedMilliseconds);
 
             await Dispatcher.BeginInvoke(new ThreadStart(delegate
@@ -117,15 +122,25 @@ namespace PhotoCat2
                 GetVM().LoadedImagesCount = 0;
             }));
 
+            // var selectedIndex = files.FindIndex(n => { return n == file; });
+
             foreach (var f in files)
             {
-                await Dispatcher.BeginInvoke(new ThreadStart(delegate
+                var dispatcher = Dispatcher.BeginInvoke(new ThreadStart(delegate
                 {
-                    GetVM().AddItem(f);
+                    GetVM().AddItemTail(f);
                 }), System.Windows.Threading.DispatcherPriority.ApplicationIdle, null);
+                dispatcher.Completed += (s, e) =>
+                {
+                    GetVM().LoadedImagesCount++;
+                    if (f == file)
+                    {
+                        GetVM().NavigateToImage(f);
+                    }
+                };
             }
-            Debug.WriteLine("File list items added in ms: " + loadSw.ElapsedMilliseconds);
 
+            Debug.WriteLine("File list items added in ms: " + loadSw.ElapsedMilliseconds);
         }
 
         private void FitImage()
@@ -274,21 +289,25 @@ namespace PhotoCat2
             if (shift != 0)
             {
                 var newIndex = GetVM().NavigateRelative(shift);
-
-                var height = ThumbsScrollView.ScrollableHeight;
-
-                if (height < 1) { return; }
-
-                var selectedImageContainer = (UIElement)ThumbsListView.ItemContainerGenerator.ContainerFromIndex(newIndex);
-
-                var offsetList = VisualTreeHelper.GetOffset(ThumbsScrollView);
-                var offsetItem = VisualTreeHelper.GetOffset(selectedImageContainer);
-
-                var newX = (offsetItem.Y - offsetList.Y) - ThumbsScrollView.ActualHeight / 2 + 50; // todo: get "50" dynamically
-
-                ThumbsScrollView.ScrollToVerticalOffset(newX);
-
             }
+        }
+
+        void ScrollToImage(int index)
+        {
+            var height = ThumbsScrollView.ScrollableHeight;
+
+            if (height < 1) { return; }
+
+            var selectedImageContainer = (UIElement)ThumbsListView.ItemContainerGenerator.ContainerFromIndex(index);
+
+            if (selectedImageContainer == null) { return; }
+
+            var offsetList = VisualTreeHelper.GetOffset(ThumbsScrollView);
+            var offsetItem = VisualTreeHelper.GetOffset(selectedImageContainer);
+
+            var newX = (offsetItem.Y - offsetList.Y) - ThumbsScrollView.ActualHeight / 2 + 50; // todo: get "50" dynamically
+
+            ThumbsScrollView.ScrollToVerticalOffset(newX);
         }
     }
 }
