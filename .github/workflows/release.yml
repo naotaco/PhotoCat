@@ -50,7 +50,7 @@ jobs:
 
     # Restore the application
     - name:  Restore the Wpf application to populate the obj folder
-      run: msbuild $env:Solution_Path /t:Restore /p:Configuration=$env:Configuration /p:RuntimeIdentifier=$env:RuntimeIdentifier
+      run: msbuild $env:Solution_Path /t:Restore /p:Configuration=$env:Configuration /p:RuntimeIdentifier=$env:RuntimeIdentifier  /p:Platform=x64
       env:
         Configuration: Release
         RuntimeIdentifier: win-${{ matrix.targetplatform }}
@@ -62,7 +62,7 @@ jobs:
 
     - uses: warrenbuckley/Setup-MSBuild@v1
 
-    - run: msbuild ${{ env.Wpf_Project_Path }} -p:Configuration=Release
+    - run: msbuild ${{ env.Wpf_Project_Path }} -p:Configuration=Release  -p:Platform=x64
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v1
